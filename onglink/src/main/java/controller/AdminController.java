@@ -83,4 +83,63 @@ public class AdminController {
     public List<Document> getPublicacoes() {
         return model.carregarPublicacoes();
     }
+    
+    public List<Document> filtrarContas(String termoBusca) {
+        final String termo = termoBusca.toLowerCase(); 
+        
+        return model.carregarContas().stream()
+            .filter(doc -> {
+                
+                // 1. FILTRO PRINCIPAL: Código do Usuário (CodUsuario)
+
+                if (doc.getInteger("CodUsuario") != null && String.valueOf(doc.getInteger("CodUsuario")).contains(termo)) {
+                    return true;
+                }
+                
+                // 2. Filtro por Nome de Usuário
+                if (doc.getString("usuario") != null && doc.getString("usuario").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 3. Filtro por CNPJ
+                if (doc.getString("cnpj") != null && doc.getString("cnpj").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 4. Filtro por Perfil
+                if (doc.getString("perfil") != null && doc.getString("perfil").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                return false;
+            })
+            .collect(Collectors.toList());
+    }
+    
+    
+    public List<Document> filtrarPublicacoes(String termoBusca) {
+        final String termo = termoBusca.toLowerCase(); 
+        
+        return model.carregarPublicacoes().stream()
+            .filter(doc -> {
+                // 1. Filtro por Título e Texto (Strings)
+                if (doc.getString("Titulo") != null && doc.getString("Titulo").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                if (doc.getString("Texto") != null && doc.getString("Texto").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 2. Filtro por Códigos (Integer -> String)
+                if (doc.getInteger("CodPubli") != null && String.valueOf(doc.getInteger("CodPubli")).contains(termo)) {
+                    return true;
+                }
+                if (doc.getInteger("CodUsuario") != null && String.valueOf(doc.getInteger("CodUsuario")).contains(termo)) {
+                    return true;
+                }
+                
+                return false;
+            })
+            .collect(Collectors.toList());
+    }
 }

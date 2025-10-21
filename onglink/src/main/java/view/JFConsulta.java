@@ -54,33 +54,97 @@ private final AdminController controller = new AdminController();
 
     private void carregarDadosNaTabela(String tipo, JTable tabela) {
         List<Document> dados = tipo.equals("contas") ? controller.getContas() : controller.getPublicacoes();
-        
-        // 1. Define as colunas
-        String[] colunas = tipo.equals("contas") 
-            ? new String[]{"Usuário", "Perfil"} 
-            : new String[]{"ID", "Razão Social", "CNPJ"};
-        
+
+        if (dados.isEmpty()) {
+            tabela.setModel(new DefaultTableModel()); // Limpa a tabela
+            return;
+        }
+
+        // 1. Define as Colunas com os Novos Nomes
+        String[] colunas;
+        if (tipo.equals("contas")) {
+            colunas = new String[]{"Cód. Usuário", "Nome", "Perfil", "CNPJ", "Email", "Descrição"}; 
+        } else { // Publicações - NOVAS COLUNAS
+            colunas = new String[]{"Cód. Publicação", "Cód. Usuário", "Título", "Texto", "Data", "Imagens"}; 
+        }
+
         DefaultTableModel model = new DefaultTableModel(colunas, 0);
 
-        // 2. Preenche as linhas
+        // 2. Preenche as Linhas com os Novos Dados
         for (Document doc : dados) {
             if (tipo.equals("contas")) {
                 model.addRow(new Object[]{
-                    doc.getString("usuario"), 
-                    doc.getString("perfil")
+                    doc.getInteger("CodUsuario"), 
+                    doc.getString("Nome"),          // Novo: Nome
+                    doc.getString("Perfil"),        // Novo: Perfil
+                    doc.getString("CNPJ"),          // Novo: CNPJ
+                    doc.getString("Email"),         // Novo: Email
+                    doc.getString("Descricao")      // Novo: Descricao
                 });
-            } else { // publicações
-                 model.addRow(new Object[]{
-                    doc.get("id"), 
-                    doc.getString("razaoSocial"), 
-                    doc.getString("cnpj")
+            } else { // publicacoes
+                // Formata a data para exibição
+                String dataPub = "N/A";
+                if (doc.get("DataPublicacao") instanceof java.util.Date) {
+                    // Formata o objeto Date do MongoDB para uma String amigável
+                    dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("DataPublicacao"));
+                }
+
+                // Obtém a lista de imagens (como ArrayList)
+                List<String> imagens = doc.get("Imagens", List.class);
+                String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
+
+                model.addRow(new Object[]{
+                    doc.getInteger("CodPubli"), // Novo: CodPubli
+                    doc.getInteger("CodUsuario"), // Novo: CodUsuario
+                    doc.getString("Titulo"),    // Novo: Titulo
+                    doc.getString("Texto"),
+                    dataPub,                    // Novo: Data Formatada
+                    numImagens + " Arquivos"     // Novo: Contagem de Imagens
                 });
             }
         }
-        
+
         // 3. Define o modelo na tabela
         tabela.setModel(model);
     }
+    
+        private void carregarPublicacoesNaTabela(List<Document> dados) {
+        if (dados == null || dados.isEmpty()) {
+            JTPublicacoes.setModel(new DefaultTableModel()); // Limpa a tabela
+            return;
+        }
+
+        // 1. Define as Colunas
+        String[] colunas = new String[]{"Cód. Publicação", "Título", "Texto", "Data", "Cód. Usuário", "Imagens"}; 
+        DefaultTableModel model = new DefaultTableModel(colunas, 0);
+
+        // 2. Preenche as Linhas
+        for (Document doc : dados) {
+            // Formatação da Data
+            String dataPub = "N/A";
+            if (doc.get("DataPublicacao") instanceof java.util.Date) {
+                dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("DataPublicacao"));
+            }
+
+            // Contagem de Imagens
+            List<String> imagens = doc.get("Imagens", List.class);
+            String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
+
+            // Montagem da linha
+            model.addRow(new Object[]{
+                doc.getInteger("CodPubli"), 
+                doc.getString("Titulo"),    
+                doc.getString("Texto"),     
+                dataPub,                    
+                doc.getInteger("CodUsuario"), 
+                numImagens + " Arquivos"     
+            });
+        }
+
+        // 3. Define o modelo na tabela
+        JTPublicacoes.setModel(model);
+    }
+    
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -109,7 +173,7 @@ private final AdminController controller = new AdminController();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        jLabel1.setText("Pesquisar (ID, Razão Social, CNPJ):");
+        jLabel1.setText("Pesquisar (CódUsuário, Razão Social, CNPJ):");
 
         btnPesquisarContas.setText("Pesquisar");
         btnPesquisarContas.addActionListener(new java.awt.event.ActionListener() {
@@ -151,12 +215,12 @@ private final AdminController controller = new AdminController();
             ContasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(ContasLayout.createSequentialGroup()
                 .addGap(60, 60, 60)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(JTFCampoPesquisaContas, javax.swing.GroupLayout.PREFERRED_SIZE, 153, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(JTFCampoPesquisaContas, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnPesquisarContas)
-                .addGap(82, 82, 82)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(btnSalvarPerfil)
@@ -183,7 +247,7 @@ private final AdminController controller = new AdminController();
 
         tabbedPane.addTab("Contas", Contas);
 
-        jLabel2.setText("Pesquisar (ID, Razão Social, CNPJ):");
+        jLabel2.setText("Pesquisar (Cód.Usuário, Cód.Publicação, Texto, Título):");
 
         btnPesquisarPublicacoes.setText("Pesquisar");
         btnPesquisarPublicacoes.addActionListener(new java.awt.event.ActionListener() {
@@ -210,16 +274,17 @@ private final AdminController controller = new AdminController();
         PublicacoesLayout.setHorizontalGroup(
             PublicacoesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(PublicacoesLayout.createSequentialGroup()
-                .addGap(60, 60, 60)
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(JTFCampoPesquisaPublicacoes, javax.swing.GroupLayout.PREFERRED_SIZE, 153, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnPesquisarPublicacoes)
-                .addContainerGap(288, Short.MAX_VALUE))
-            .addGroup(PublicacoesLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane2)
+                .addGroup(PublicacoesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(PublicacoesLayout.createSequentialGroup()
+                        .addGap(60, 60, 60)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(JTFCampoPesquisaPublicacoes)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnPesquisarPublicacoes))
+                    .addGroup(PublicacoesLayout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 775, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         PublicacoesLayout.setVerticalGroup(
@@ -269,12 +334,19 @@ private final AdminController controller = new AdminController();
 
     private void btnPesquisarPublicacoesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarPublicacoesActionPerformed
         // TODO add your handling code here:
-        final String termo = JTFCampoPesquisaPublicacoes.getText();
-        JOptionPane.showMessageDialog(this, 
-            "Simulando filtro de Publicações por termo: " + termo + 
-            "\n(Em produção, faria uma consulta filtrada ao MongoDB).");
-        // Em um projeto real, você chamaria um método filtrado no controller aqui:
-        // carregarDadosNaTabela("publicacoes", controller.filtrarPublicacoes(termo));
+        String termo = JTFCampoPesquisaPublicacoes.getText().trim();
+    
+    List<Document> resultados;
+    
+    if (termo.isEmpty()) {
+        // Se o campo estiver vazio, carrega todos os dados
+        resultados = controller.getPublicacoes();
+    } else {
+        // Se houver um termo, chama o novo método de filtro
+        resultados = controller.filtrarPublicacoes(termo);
+    }
+
+    carregarPublicacoesNaTabela(resultados);
     }//GEN-LAST:event_btnPesquisarPublicacoesActionPerformed
 
     private void JTContasMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JTContasMouseClicked
@@ -290,14 +362,14 @@ private final AdminController controller = new AdminController();
 
     // Variáveis de estado
     DefaultTableModel model = (DefaultTableModel) JTContas.getModel();
-    final String usuario = (String) model.getValueAt(linha, 0); 
-    final String perfilAtual = (String) model.getValueAt(linha, 1); 
+    final Integer codUsuario = (Integer) model.getValueAt(linha, 0); // Coluna 0 é CodUsuario
+    final String perfilAtual = (String) model.getValueAt(linha, 2);  // Coluna 2 é Perfil
     
-    perfilAtualSelecionado = perfilAtual; 
+    perfilAtualSelecionado = perfilAtual; // Armazena o perfil para a ação de salvar     
 
     // Lógica para encontrar o ID no Documento completo
     controller.getContas().stream()
-        .filter(doc -> doc.getString("usuario").equals(usuario))
+        .filter(doc -> doc.getString("CodUsuario").equals(codUsuario))
         .findFirst()
         .ifPresent(doc -> {
             contaSelecionadaId = doc.getObjectId("_id").toString(); 

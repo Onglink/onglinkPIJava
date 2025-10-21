@@ -167,11 +167,31 @@ public class SolicitacaoModel {
     }
 
     private void popularPublicacoes() {
-        publicacaoCollection.insertOne(
-                new Document("id", 101).append("razaoSocial", "Alpha Ltda").append("cnpj", "00.000.000/0001-00")
-            );
-        publicacaoCollection.insertOne(
-            new Document("id", 102).append("razaoSocial", "Comércio Beta").append("cnpj", "11.111.111/0001-11")
-        );
+        // Limpa a coleção para inserir novos exemplos estruturados
+        publicacaoCollection.deleteMany(new Document()); 
+
+        // Simulação da DataPublicacao como objeto Date (padrão MongoDB)
+        java.util.Date dataExemplo = new java.util.Date(); 
+
+        // Exemplo 1: Publicação completa
+        Document pub1 = new Document("CodPubli", 10)
+            .append("DataPublicacao", dataExemplo)
+            .append("Texto", "Nosso primeiro post após a validação de esquema, falando sobre nossa nova iniciativa de arrecadação.")
+            .append("Titulo", "Nova Campanha de Doações Lançada!")
+            .append("Imagens", java.util.Arrays.asList(
+                "https://images.pexels.com/photos/32997/pexels-photo.jpg",
+                "https://images.pexels.com/photos/32595987/pexels-photo-32595987.jpeg"
+            ))
+            .append("CodUsuario", 9999);
+        publicacaoCollection.insertOne(pub1);
+
+        // Exemplo 2: Publicação simples
+        Document pub2 = new Document("CodPubli", 11)
+            .append("DataPublicacao", dataExemplo)
+            .append("Texto", "Atualização sobre o projeto de voluntariado deste mês.")
+            .append("Titulo", "Chamada para Voluntários")
+            .append("Imagens", java.util.Arrays.asList("http://link.para/uma_imagem.jpg"))
+            .append("CodUsuario", 8888);
+        publicacaoCollection.insertOne(pub2);
     }
 }
