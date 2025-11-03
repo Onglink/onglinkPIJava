@@ -6,7 +6,8 @@ import com.mongodb.client.MongoDatabase;
 
 public class DBConfig {
      
-    private static final String CONNECTION_STRING = "mongodb+srv://felipe_paes:onglink_fatec@onglinkdb.9kxqdci.mongodb.net/?retryWrites=true&w=majority&appName=onglinkDb";
+    //private static final String CONNECTION_STRING = "mongodb+srv://felipe_paes:onglink_fatec@onglinkdb.9kxqdci.mongodb.net/?retryWrites=true&w=majority&appName=onglinkDb";
+    private static final String CONNECTION_STRING = "mongodb+srv://felipe_paes:onglink_fatec@onglinkdb.ljvrr5b.mongodb.net/onglinkDb";
     private static final String DATABASE_NAME = "onglinkDb";
 
     private static MongoClient mongoClient = null;

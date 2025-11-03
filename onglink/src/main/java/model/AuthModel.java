@@ -8,30 +8,30 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 public class AuthModel {
-    private final MongoCollection<Document> collection;
+    private final MongoCollection<Document> usuariosCollection;
 
     public AuthModel() {
         MongoDatabase db = DBConfig.getDatabase();
-        this.collection = db.getCollection("usuarios"); 
+        this.usuariosCollection = db.getCollection("usuarios"); 
         
         // Criando usuários de teste para os 3 perfis se a coleção estiver vazia
-        if (collection.countDocuments() == 0) {
+        if (usuariosCollection.countDocuments() == 0) {
             System.out.println("Criando usuários de teste (ADMIN, ONG, USER)...");
             
             // ADMIN (Pode logar no sistema)
-            collection.insertOne(new Document("usuario", "admin").append("senha", "12345").append("perfil", "ADMIN"));
+            usuariosCollection.insertOne(new Document("email", "admin@admin.com").append("senha", "12345").append("status", "ADMIN"));
             
             // ONG (Não pode logar no sistema)
-            collection.insertOne(new Document("usuario", "ong_teste").append("senha", "ong123").append("perfil", "ONG"));
+            usuariosCollection.insertOne(new Document("email", "ong_teste@teste.com").append("senha", "ong123").append("status", "ONG"));
             
             // USER (Não pode logar no sistema)
-            collection.insertOne(new Document("usuario", "user_teste").append("senha", "user123").append("perfil", "USER"));
+            usuariosCollection.insertOne(new Document("email", "user_teste@teste.com").append("senha", "user123").append("status", "USER"));
         }
     }
 
-    public boolean autenticar(String usuario, String senha) {
-        Document userDoc = collection.find(and(
-            eq("usuario", usuario),
+    public boolean autenticar(String email, String senha) {
+        Document userDoc = usuariosCollection.find(and(
+            eq("email", email),
             eq("senha", senha)
         )).first();
 
@@ -39,24 +39,22 @@ public class AuthModel {
     }
 
     /**
-     * Verifica se o usuário tem o perfil de ADMIN. 
-     * Somente ADMIN pode acessar o painel de gestão.
+     * Verifica se o usuário tem o status de ADMIN. 
      */
-    public boolean isAdmin(String usuario) {
-        Document userDoc = collection.find(eq("usuario", usuario)).first();
+    public boolean isAdmin(String email) {
+        Document userDoc = usuariosCollection.find(eq("email", email)).first();
         if (userDoc != null) {
-            // A regra é simples: o campo 'perfil' deve ser "ADMIN"
-            String perfil = userDoc.getString("perfil");
-            return "ADMIN".equalsIgnoreCase(perfil); 
+            String status = userDoc.getString("status"); // Lendo campo 'status' minúsculo
+            return "ADMIN".equalsIgnoreCase(status); 
         }
         return false;
     }
     
     /**
-     * Retorna o perfil de um usuário autenticado.
+     * Retorna o status de um usuário autenticado.
      */
-    public String getPerfil(String usuario) {
-         Document userDoc = collection.find(eq("usuario", usuario)).first();
-         return userDoc != null ? userDoc.getString("perfil") : null;
+    public String getStatus(String email) { // RENOMEADO para refletir 'status'
+         Document userDoc = usuariosCollection.find(eq("email", email)).first();
+         return userDoc != null ? userDoc.getString("status") : null;
     }
 }

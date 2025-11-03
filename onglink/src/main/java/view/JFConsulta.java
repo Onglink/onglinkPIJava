@@ -13,7 +13,7 @@ import java.awt.event.ActionEvent;
 import java.util.List;
 import java.util.Vector;
 import java.util.Collections; // Import para garantir o carregamento das tabelas
-
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -27,7 +27,7 @@ private final AdminController controller = new AdminController();
     
 
     private String contaSelecionadaId; 
-    private String perfilAtualSelecionado;
+    private String statusAtualSelecionado;
     // Construtor
     public JFConsulta() {
         initComponents();
@@ -56,30 +56,28 @@ private final AdminController controller = new AdminController();
         List<Document> dados = tipo.equals("contas") ? controller.getContas() : controller.getPublicacoes();
 
         if (dados.isEmpty()) {
-            tabela.setModel(new DefaultTableModel()); // Limpa a tabela
+            tabela.setModel(new DefaultTableModel());
             return;
         }
 
-        // 1. Define as Colunas com os Novos Nomes
         String[] colunas;
         if (tipo.equals("contas")) {
-            colunas = new String[]{"Cód. Usuário", "Nome", "Perfil", "CNPJ", "Email", "Descrição"}; 
-        } else { // Publicações - NOVAS COLUNAS
+            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email"}; 
+        } else { 
             colunas = new String[]{"Cód. Publicação", "Cód. Usuário", "Título", "Texto", "Data", "Imagens"}; 
         }
 
         DefaultTableModel model = new DefaultTableModel(colunas, 0);
 
-        // 2. Preenche as Linhas com os Novos Dados
         for (Document doc : dados) {
             if (tipo.equals("contas")) {
                 model.addRow(new Object[]{
-                    doc.getInteger("CodUsuario"), 
-                    doc.getString("Nome"),          // Novo: Nome
-                    doc.getString("Perfil"),        // Novo: Perfil
-                    doc.getString("CNPJ"),          // Novo: CNPJ
-                    doc.getString("Email"),         // Novo: Email
-                    doc.getString("Descricao")      // Novo: Descricao
+                    // LENDO CAMPOS MINÚSCULOS CONFORME O SEU BANCO
+                    doc.getObjectId("_id").toString().substring(0, 8) + "...", // Usando o _id truncado
+                    doc.getString("nome"),          // ATUALIZADO: 'nome'
+                    doc.getString("status"),        // ATUALIZADO: 'status'
+                    doc.getString("cpf"),          // ATUALIZADO: 'cpf'
+                    doc.getString("email"),         // ATUALIZADO: 'email'
                 });
             } else { // publicacoes
                 // Formata a data para exibição
@@ -108,42 +106,48 @@ private final AdminController controller = new AdminController();
         tabela.setModel(model);
     }
     
-        private void carregarPublicacoesNaTabela(List<Document> dados) {
-        if (dados == null || dados.isEmpty()) {
-            JTPublicacoes.setModel(new DefaultTableModel()); // Limpa a tabela
-            return;
-        }
-
-        // 1. Define as Colunas
-        String[] colunas = new String[]{"Cód. Publicação", "Título", "Texto", "Data", "Cód. Usuário", "Imagens"}; 
-        DefaultTableModel model = new DefaultTableModel(colunas, 0);
-
-        // 2. Preenche as Linhas
-        for (Document doc : dados) {
-            // Formatação da Data
-            String dataPub = "N/A";
-            if (doc.get("DataPublicacao") instanceof java.util.Date) {
-                dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("DataPublicacao"));
-            }
-
-            // Contagem de Imagens
-            List<String> imagens = doc.get("Imagens", List.class);
-            String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
-
-            // Montagem da linha
-            model.addRow(new Object[]{
-                doc.getInteger("CodPubli"), 
-                doc.getString("Titulo"),    
-                doc.getString("Texto"),     
-                dataPub,                    
-                doc.getInteger("CodUsuario"), 
-                numImagens + " Arquivos"     
-            });
-        }
-
-        // 3. Define o modelo na tabela
-        JTPublicacoes.setModel(model);
+private void carregarPublicacoesNaTabela(List<Document> dados) {
+    if (dados == null || dados.isEmpty()) {
+        JTPublicacoes.setModel(new DefaultTableModel()); 
+        return;
     }
+    
+    // Novas Colunas (Título, Descrição, Criado Por, Data)
+    String[] colunas = new String[]{"Cód. Publicação (ID)", "Título", "Descrição", "Criado Por", "Data", "Imagens"}; 
+    DefaultTableModel model = new DefaultTableModel(colunas, 0);
+
+    for (Document doc : dados) {
+        // --- CÓDIGOS CORRIGIDOS PARA O SEU NOVO SCHEMA ---
+        String pubId = doc.getObjectId("_id").toString(); 
+        
+        // CORRIGIDO: Lendo 'criadoPor' (Object Id)
+        String criadorId = doc.get("criadoPor") instanceof ObjectId 
+                           ? doc.getObjectId("criadoPor").toString() 
+                           : "N/A";
+                           
+        // CORRIGIDO: Lendo 'createdAt'
+        String dataPub = "N/A";
+        if (doc.get("createdAt") instanceof java.util.Date) {
+            dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("createdAt"));
+        }
+        
+        // Contagem de Imagens (campo 'imagem' minúsculo)
+        List<?> imagens = doc.get("imagem", List.class); 
+        String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
+
+        // Montagem da linha (lendo todos os campos minúsculos)
+        model.addRow(new Object[]{
+            pubId.substring(0, 8) + "...",      
+            doc.getString("titulo"),            // Lendo 'titulo'
+            doc.getString("descricao"),         // Lendo 'descricao' (o antigo 'Texto')
+            criadorId.substring(0, 8) + "...",  
+            dataPub,                            
+            numImagens + " Arquivos"     
+        });
+    }
+    
+    JTPublicacoes.setModel(model);
+}
     
 
     /**
@@ -172,6 +176,17 @@ private final AdminController controller = new AdminController();
         JTPublicacoes = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+
+        tabbedPane.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                tabbedPaneStateChanged(evt);
+            }
+        });
+        tabbedPane.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tabbedPaneMouseClicked(evt);
+            }
+        });
 
         jLabel1.setText("Pesquisar (CódUsuário, Razão Social, CNPJ):");
 
@@ -350,37 +365,38 @@ private final AdminController controller = new AdminController();
     }//GEN-LAST:event_btnPesquisarPublicacoesActionPerformed
 
     private void JTContasMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JTContasMouseClicked
-        // TODO add your handling code here:
     int linha = JTContas.getSelectedRow();
-    // Se nenhuma linha estiver selecionada, ou se o clique for fora da tabela
-    if (linha == -1) { 
-        // Se desejar, pode-se ocultar aqui também, caso o clique seja deselecionar
-        btnSalvarPerfil.setVisible(false);
-        cbxNovoPerfil.setVisible(false);
-        return;
-    }
+        if (linha == -1) { 
+            btnSalvarPerfil.setVisible(false);
+            cbxNovoPerfil.setVisible(false);
+            return;
+        }
 
-    // Variáveis de estado
-    DefaultTableModel model = (DefaultTableModel) JTContas.getModel();
-    final Integer codUsuario = (Integer) model.getValueAt(linha, 0); // Coluna 0 é CodUsuario
-    final String perfilAtual = (String) model.getValueAt(linha, 2);  // Coluna 2 é Perfil
-    
-    perfilAtualSelecionado = perfilAtual; // Armazena o perfil para a ação de salvar     
+        DefaultTableModel model = (DefaultTableModel) JTContas.getModel();
+        
+        // CORREÇÃO 1: Lê o status atual (o nome da coluna é 'Status' na UI, mas o dado é 'Status')
+        // Coluna 2 na tabela gerada é a coluna 'Status'.
+        final String statusAtual = (String) model.getValueAt(linha, 2); 
+        final String email = (String) model.getValueAt(linha, 4); // Coluna 4 é Email
+        
+        statusAtualSelecionado = statusAtual; 
 
-    // Lógica para encontrar o ID no Documento completo
-    controller.getContas().stream()
-        .filter(doc -> doc.getString("CodUsuario").equals(codUsuario))
-        .findFirst()
-        .ifPresent(doc -> {
-            contaSelecionadaId = doc.getObjectId("_id").toString(); 
-            
-            // 1. Define o item atual na ComboBox
-            cbxNovoPerfil.setSelectedItem(perfilAtual);
-            
-            // 2. EXIBIR COMPONENTES (tornar visíveis)
-            btnSalvarPerfil.setVisible(true);
-            cbxNovoPerfil.setVisible(true); 
-        });
+        // Lógica para encontrar o ID no Documento completo (usamos o email para garantir a busca)
+        // Usaremos o email para garantir a unicidade, já que CodUsuario foi removido do Model.
+        controller.getContas().stream()
+            .filter(doc -> doc.getString("email").equalsIgnoreCase(email))
+            .findFirst()
+            .ifPresent(doc -> {
+                // Obtém o ID do MongoDB (_id) e armazena como String para o update
+                contaSelecionadaId = doc.getObjectId("_id").toString(); 
+                
+                // 1. Define o item atual na ComboBox
+                cbxNovoPerfil.setSelectedItem(statusAtual);
+                
+                // 2. EXIBIR COMPONENTES (tornar visíveis)
+                btnSalvarPerfil.setVisible(true);
+                cbxNovoPerfil.setVisible(true); 
+            });
     }//GEN-LAST:event_JTContasMouseClicked
 
     private void btnSalvarPerfilActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalvarPerfilActionPerformed
@@ -391,7 +407,7 @@ if (contaSelecionadaId == null) return;
     final String novoPerfil = cbxNovoPerfil.getSelectedItem().toString();
     
     
-    boolean sucesso = controller.setPerfil(contaSelecionadaId, novoPerfil); // Chamada ideal
+    boolean sucesso = controller.setStatus(contaSelecionadaId, novoPerfil); // Chamada ideal
 
 
     if (sucesso) {
@@ -413,6 +429,19 @@ if (contaSelecionadaId == null) return;
             "Erro", JOptionPane.ERROR_MESSAGE);
     }
     }//GEN-LAST:event_btnSalvarPerfilActionPerformed
+
+    private void tabbedPaneMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tabbedPaneMouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_tabbedPaneMouseClicked
+
+    private void tabbedPaneStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_tabbedPaneStateChanged
+        // TODO add your handling code here:
+        // Verifica se a aba "Publicações" (índice 1) está selecionada
+    if (tabbedPane.getSelectedIndex() == 1) { 
+        // Carrega os dados somente agora
+        carregarPublicacoesNaTabela(controller.getPublicacoes());
+    }
+    }//GEN-LAST:event_tabbedPaneStateChanged
 
     /**
      * @param args the command line arguments

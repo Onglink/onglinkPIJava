@@ -162,15 +162,15 @@ private final AuthController controller = new AuthController();
 
     private void btn_EntrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_EntrarActionPerformed
         // TODO add your handling code here:
-        String usuario = JTFCampoEmail.getText();
+        String email = JTFCampoEmail.getText();
         String senha = new String(JTFCampoSenha.getPassword());
 
     
-    if (controller.autenticar(usuario, senha)) {
+    if (controller.autenticar(email, senha)) {
         
-        final String perfil = controller.getPerfil(usuario);
+        final String status = controller.getStatus(email);
         
-        if (perfil.equalsIgnoreCase("ADMIN")) {
+        if (status.equalsIgnoreCase("ADMIN")) {
             
             // --- SUCESSO: ACESSO ADMIN ---
             JOptionPane.showMessageDialog(this, 
@@ -184,7 +184,7 @@ private final AuthController controller = new AuthController();
             // --- ACESSO NEGADO: USER ou ONG ---
             
             String mensagem;
-            if (perfil.equalsIgnoreCase("ONG")) {
+            if (status.equalsIgnoreCase("ONG")) {
                 mensagem = "Conta de ONG: Você não tem permissão para acessar o Painel de Administração.";
             } else { // USER
                 mensagem = "Conta de Usuário Comum: Você não tem permissão para acessar o Painel de Administração.";
@@ -198,7 +198,7 @@ private final AuthController controller = new AuthController();
     } else {
         // Falha na autenticação (usuário/senha incorretos)
         JOptionPane.showMessageDialog(this, 
-            "Usuário ou Senha inválidos.", 
+            "Email ou Senha inválidos.", 
             "Erro de Login", JOptionPane.ERROR_MESSAGE);
     }
     }//GEN-LAST:event_btn_EntrarActionPerformed

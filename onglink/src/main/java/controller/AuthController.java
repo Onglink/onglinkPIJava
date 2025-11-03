@@ -9,18 +9,21 @@ public class AuthController {
         this.model = new AuthModel();
     }
 
-    public boolean autenticar(String usuario, String senha) {
-        return model.autenticar(usuario, senha);
+    public boolean autenticar(String email, String senha) {
+        return model.autenticar(email, senha);
     }
 
     /**
-     * Permite o acesso ao sistema somente se o perfil for ADMIN.
+     * Permite o acesso ao sistema somente se o status for ADMIN.
      */
-    public boolean isAdmin(String usuario) {
-        return model.isAdmin(usuario);
+    public boolean isAdmin(String email) {
+        return model.isAdmin(email);
     }
     
-    public String getPerfil(String usuario) {
-        return model.getPerfil(usuario);
+    /**
+     * Retorna o status do usuário (ADMIN, USER, ONG).
+     */
+    public String getStatus(String email) {
+        return model.getStatus(email);
     }
 }

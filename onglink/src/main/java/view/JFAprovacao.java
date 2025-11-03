@@ -66,10 +66,11 @@ private static final java.util.logging.Logger logger = java.util.logging.Logger.
         for (Document d : lista) {
             String id = d.getString("_id");
             String razaoSocial = d.getString("razaoSocial");
+            String nomeFantasia = d.getString("nomeFantasia");
             String status = d.containsKey("dataAprovacao") ? " (APROVADO)" : "";
             
              
-            String chaveExibicao = id + " | " + razaoSocial + status;
+            String chaveExibicao = id + " | " + razaoSocial + nomeFantasia + status;
             
             listModel.addElement(chaveExibicao);
             mapSolicitacoes.put(chaveExibicao, d); // Mapeia a string para o Document
@@ -101,18 +102,21 @@ private static final java.util.logging.Logger logger = java.util.logging.Logger.
             boolean temDocumentos = solicitacaoSelecionada.getBoolean("documentosEnviados", false);
             String documentosStatus = temDocumentos ? "SIM" : "NÃO";
             
-            // 3. Montagem do Texto (Apenas informações normais)
-            String detalhes = String.format(
-                "ID: %s\nRazão Social: %s\nEndereço: %s\nData Solicitação: %s\nEmail: %s\n\nSTATUS DOCUMENTOS: %s",
-                solicitacaoSelecionada.getString("_id"), 
-                solicitacaoSelecionada.getString("razaoSocial"),
-                solicitacaoSelecionada.getString("endereco"),
-                solicitacaoSelecionada.getString("dataSolicitacao"),
-                solicitacaoSelecionada.getString("email"),
-                documentosStatus
-            );
-            TADetalhesArea.setText(detalhes);
-
+            // 3. Montagem do Texto (CORRIGIDO O FORMATO DA STRING)
+        String detalhes = String.format(
+            "ID: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s\nRepresentante Legal: %s\nCausa Social: %s\nDescrição: %s\nEndereço: %s\nEmail: %s\n\nSTATUS DOCUMENTOS: %s",
+            solicitacaoSelecionada.getString("_id"), 
+            solicitacaoSelecionada.getString("razaoSocial"),
+            solicitacaoSelecionada.getString("nomeFantasia"),
+            solicitacaoSelecionada.getString("cnpj"),
+            solicitacaoSelecionada.getString("repLegal"),
+            solicitacaoSelecionada.getString("causaSocial"),
+            solicitacaoSelecionada.getString("descricao"),
+            solicitacaoSelecionada.getString("endereco"),
+            solicitacaoSelecionada.getString("email"),
+            documentosStatus
+        );
+        TADetalhesArea.setText(detalhes);
             // 4. CONTROLE DA VISIBILIDADE DO BOTÃO
             btnDocumentos.setVisible(temDocumentos); 
         }

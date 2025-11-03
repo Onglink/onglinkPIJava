@@ -2,6 +2,7 @@ package controller;
 
 import model.SolicitacaoModel;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,21 +58,24 @@ public class AdminController {
     }
 
     // ===============================================
-    // GESTÃO DE CONTAS E PERFIS
+    // GESTÃO DE CONTAS E STATUS (CORRIGIDO)
     // ===============================================
     
-
-    public boolean setPerfil(String usuarioId, String perfil) {
-        // Chama o método de atualização do Model com o novo perfil escolhido
-        return model.atualizarPerfilUsuario(usuarioId, perfil);
+    /**
+     * Define o Status de um usuário com um valor específico (ADMIN, USER, ONG).
+     */
+    public boolean setStatus(String _id, String status) {
+        // CORREÇÃO: Chamando o método renomeado no Model
+        return model.atualizarStatusUsuario(_id, status); 
     }
     
     /**
      * Lógica de alternância (opcional, mantida para compatibilidade).
      */
-    public boolean alternarPerfil(String usuarioId, String perfilAtual) {
-        String novoPerfil = perfilAtual.equalsIgnoreCase("ADMIN") ? "USER" : "ADMIN"; 
-        return model.atualizarPerfilUsuario(usuarioId, novoPerfil);
+    public boolean alternarStatus(String usuarioId, String statusAtual) {
+        String novoStatus = statusAtual.equalsIgnoreCase("ADMIN") ? "USER" : "ADMIN"; 
+        // CORREÇÃO: Chamando o método renomeado no Model
+        return model.atualizarStatusUsuario(usuarioId, novoStatus); 
     }
     
     // --- Consulta ---
@@ -89,25 +93,23 @@ public class AdminController {
         
         return model.carregarContas().stream()
             .filter(doc -> {
-                
-                // 1. FILTRO PRINCIPAL: Código do Usuário (CodUsuario)
-
-                if (doc.getInteger("CodUsuario") != null && String.valueOf(doc.getInteger("CodUsuario")).contains(termo)) {
+                // Filtro por _id (ID)
+                if (doc.getObjectId("_id") != null && doc.getObjectId("_id").toString().toLowerCase().contains(termo)) {
                     return true;
                 }
                 
-                // 2. Filtro por Nome de Usuário
-                if (doc.getString("usuario") != null && doc.getString("usuario").toLowerCase().contains(termo)) {
+                // Filtro por Nome (campo 'nome' minúsculo)
+                if (doc.getString("nome") != null && doc.getString("nome").toLowerCase().contains(termo)) {
                     return true;
                 }
                 
-                // 3. Filtro por CNPJ
-                if (doc.getString("cnpj") != null && doc.getString("cnpj").toLowerCase().contains(termo)) {
+                // Filtro por CNPJ (campo 'cnpj' minúsculo)
+                if (doc.getString("cnpj") != null && doc.getString("cpf").toLowerCase().contains(termo)) {
                     return true;
                 }
                 
-                // 4. Filtro por Perfil
-                if (doc.getString("perfil") != null && doc.getString("perfil").toLowerCase().contains(termo)) {
+                // Filtro por Status (campo 'status' minúsculo)
+                if (doc.getString("status") != null && doc.getString("status").toLowerCase().contains(termo)) {
                     return true;
                 }
                 
@@ -117,25 +119,33 @@ public class AdminController {
     }
     
     
-    public List<Document> filtrarPublicacoes(String termoBusca) {
+public List<Document> filtrarPublicacoes(String termoBusca) {
         final String termo = termoBusca.toLowerCase(); 
         
         return model.carregarPublicacoes().stream()
             .filter(doc -> {
-                // 1. Filtro por Título e Texto (Strings)
-                if (doc.getString("Titulo") != null && doc.getString("Titulo").toLowerCase().contains(termo)) {
+                
+                // --- 1. Filtro por Título e Descrição (Minúsculo) ---
+                if (doc.getString("titulo") != null && doc.getString("titulo").toLowerCase().contains(termo)) {
                     return true;
                 }
-                if (doc.getString("Texto") != null && doc.getString("Texto").toLowerCase().contains(termo)) {
+                // O campo 'Texto' no seu código Java corresponde a 'descricao' no seu MongoDB
+                if (doc.getString("descricao") != null && doc.getString("descricao").toLowerCase().contains(termo)) {
                     return true;
                 }
                 
-                // 2. Filtro por Códigos (Integer -> String)
-                if (doc.getInteger("CodPubli") != null && String.valueOf(doc.getInteger("CodPubli")).contains(termo)) {
+                // --- 2. Filtro por IDs (ObjectIds) ---
+                
+                // Filtro pelo ID da Publicação (_id)
+                if (doc.getObjectId("_id") != null && doc.getObjectId("_id").toString().toLowerCase().contains(termo)) {
                     return true;
                 }
-                if (doc.getInteger("CodUsuario") != null && String.valueOf(doc.getInteger("CodUsuario")).contains(termo)) {
-                    return true;
+                
+                // Filtro pelo ID do Criador (criadoPor)
+                if (doc.get("criadoPor") instanceof ObjectId) {
+                    if (doc.getObjectId("criadoPor").toString().toLowerCase().contains(termo)) {
+                        return true;
+                    }
                 }
                 
                 return false;
