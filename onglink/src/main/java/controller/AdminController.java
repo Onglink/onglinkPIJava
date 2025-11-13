@@ -1,5 +1,6 @@
 package controller;
 
+import java.util.ArrayList;
 import model.SolicitacaoModel;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -88,6 +89,25 @@ public class AdminController {
         return model.carregarPublicacoes();
     }
     
+    public List<Document> getOngs() {
+        return model.carregarOngs();
+    }
+    
+    /**
+    * Busca um Documento de usuário pelo seu _id.
+    */
+    public Document getUsuarioById(ObjectId userId) {
+       return model.getUsuarioById(userId);
+    }
+    
+    // --- Reprovação ---
+    public boolean reprovar(String id) {
+        // Chama o método no Model para reprovar a solicitação
+        return model.reprovarSolicitacao(id);
+    }
+    
+    
+    
     public List<Document> filtrarContas(String termoBusca) {
         final String termo = termoBusca.toLowerCase(); 
         
@@ -104,7 +124,7 @@ public class AdminController {
                 }
                 
                 // Filtro por CNPJ (campo 'cnpj' minúsculo)
-                if (doc.getString("cnpj") != null && doc.getString("cpf").toLowerCase().contains(termo)) {
+                if (doc.getString("cpf") != null && doc.getString("cpf").toLowerCase().contains(termo)) {
                     return true;
                 }
                 
@@ -118,6 +138,23 @@ public class AdminController {
             .collect(Collectors.toList());
     }
     
+    
+    public List<Document> getAssignedUsersDetails(Document ongDoc) {
+        if (ongDoc == null) {
+            return new ArrayList<>();
+        }
+
+        // 1. Extração da Lista de ObjectIds (Assumed structure)
+        // Garante que o campo assignedTo é lido como uma Lista de ObjectIds
+        List<ObjectId> userIds = ongDoc.getList("assignedTo", ObjectId.class);
+
+        if (userIds == null || userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 2. Chama o método OTIMIZADO que busca todos os IDs em uma única consulta
+        return model.getUsersByIds(userIds); 
+    }
     
 public List<Document> filtrarPublicacoes(String termoBusca) {
         final String termo = termoBusca.toLowerCase(); 
@@ -152,4 +189,74 @@ public List<Document> filtrarPublicacoes(String termoBusca) {
             })
             .collect(Collectors.toList());
     }
+
+
+public List<Document> filtrarOngs(String termoBusca) {
+        final String termo = termoBusca.toLowerCase(); 
+        
+        return model.carregarOngs().stream()
+            .filter(doc -> {
+                
+                // 1. Filtro por Nome (campo 'nome' minúsculo)
+                if (doc.getString("nomeFantasia") != null && doc.getString("nomeFantasia").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 2. Filtro por CNPJ (campo 'cnpj' minúsculo)
+                if (doc.getString("cnpj") != null && doc.getString("cnpj").contains(termo)) {
+                    return true;
+                }
+                
+                // 3. Filtro por Causa Social (campo 'causaSocial' minúsculo)
+                if (doc.getString("causaSocial") != null && doc.getString("causaSocial").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 4. Filtro por ID do MongoDB (_id)
+                if (doc.getObjectId("_id") != null && doc.getObjectId("_id").toString().toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                //5. Filtro por Descrição
+                if (doc.getString("descricao") != null && doc.getString("descricao").toString().contains(termo)){
+                        return true;
+                }
+                
+                // 6. Filtro por Nome (campo 'razaoSocial' minúsculo)
+                if (doc.getString("razaoSocial") != null && doc.getString("razaoSocial").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 7. Filtro por Nome (campo 'email' minúsculo)
+                if (doc.getString("email") != null && doc.getString("email").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                // 1. Filtro por Nome (campo 'nome' minúsculo)
+                if (doc.getString("cpf") != null && doc.getString("cpf").toLowerCase().contains(termo)) {
+                    return true;
+                }
+                
+                return false;
+            })
+            .collect(Collectors.toList());
+    }
+
+
+    // Método para atualizar campos de uma solicitação PENDENTE
+    public boolean atualizarDadosSolicitacao(String solicitacaoId, Document updates) {
+        return model.atualizarDadosSolicitacao(solicitacaoId, updates);
+    }
+
+    // Método para aprovar (move o documento)
+    public boolean aprovarONG(String solicitacaoId) {
+        // Aqui você pode chamar o método 'aprovar' existente se ele já faz a lógica de mover e deletar.
+        return model.aprovarSolicitacao(solicitacaoId); 
+    }
+
+    // Método para reprovar (apenas deleta)
+    public boolean reprovarONG(String solicitacaoId) {
+        return model.reprovarSolicitacao(solicitacaoId); // Renomeei para maior clareza
+    }
+    
 }

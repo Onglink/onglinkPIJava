@@ -288,19 +288,27 @@ final String termo = jTFPesquisa.getText();
 
     private void btnReprovarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReprovarActionPerformed
     if (solicitacaoSelecionada == null) {
-            JOptionPane.showMessageDialog(this, "Selecione um registro para reprovar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        final String emailDestino = solicitacaoSelecionada.getString("email");
-        final String motivo = JOptionPane.showInputDialog(this, "Informe o motivo da NÃO aprovação para o e-mail " + emailDestino + ":");
-        
-        if (motivo != null && !motivo.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                "Motivo de reprovação enviado para " + emailDestino + 
-                "\nMotivo: " + motivo + ". (Simulação de Envio de Email)", 
-                "Reprovação Enviada", JOptionPane.WARNING_MESSAGE);
-        }
+        JOptionPane.showMessageDialog(this, "Selecione um registro para aprovar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+ // Obtém o _id da solicitação
+    // ATENÇÃO: Se o _id na lista de aprovação for uma String, use getString("_id")
+    final String idSolicitacao = solicitacaoSelecionada.getObjectId("_id").toString(); 
+    
+    // Chamada ao método atualizado do Controller
+    if (controller.aprovarONG(idSolicitacao)) {
+         JOptionPane.showMessageDialog(this, 
+            "Solicitação APROVADA! Registro da ONG criado e perfil do usuário atualizado.", 
+            "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+         
+         // Recarrega a lista
+         carregarLista(controller.getAprovacoes());
+         // Limpa a área de detalhes
+         TADetalhesArea.setText(""); 
+    } else {
+         JOptionPane.showMessageDialog(this, "Erro FATAL ao aprovar/inserir a ONG.", "Erro", JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_btnReprovarActionPerformed
 
     private void btnDocumentosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDocumentosActionPerformed

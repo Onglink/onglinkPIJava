@@ -11,10 +11,12 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.util.List;
-import java.util.Vector;
-import java.util.Collections; // Import para garantir o carregamento das tabelas
+import java.util.Map;
+import java.util.HashMap;
 import org.bson.types.ObjectId;
-
+import java.util.Collections;
+import javax.swing.event.ListSelectionEvent; // Import necessário para ListSelectionEvent
+ 
 /**
  *
  * @author Felipe
@@ -26,21 +28,44 @@ public class JFConsulta extends javax.swing.JInternalFrame {
 private final AdminController controller = new AdminController();
     
 
-    private String contaSelecionadaId; 
+    // Variáveis de Estado
+    private String contaSelecionadaId;
     private String statusAtualSelecionado;
-    // Construtor
+    
+    // Variáveis para a Lógica de JList/Detalhes da aba ONGs
+    private DefaultListModel<String> listModelOngs;
+    private Map<String, Document> mapOngs = new HashMap<>();
+    private Document ongSelecionada;
+    
+    
+    private Map<String, Document> mapAprovacoes = new HashMap<>(); // O mapa que armazena os documentos
+    private Document solicitacaoSelecionada;
+    private DefaultListModel<String> listModelAprovacoes;
+
+// Construtor
     public JFConsulta() {
         initComponents();
-          
-            if (btnSalvarPerfil != null) {
-                btnSalvarPerfil.setVisible(false);
-            }
-            if (cbxNovoPerfil != null) {
-                cbxNovoPerfil.setVisible(false);
-            }
-        // Inicializa e carrega os dados nas tabelas
-        carregarDadosNaTabela("contas", JTContas);
-        carregarDadosNaTabela("publicacoes", JTPublicacoes);
+        
+        // Ocultar componentes de ação inicialmente
+        if (btnSalvarPerfil != null) {
+            btnSalvarPerfil.setVisible(false);
+        }
+        if (cbxNovoPerfil != null) {
+            cbxNovoPerfil.setVisible(false);
+        }
+        
+        try {
+            // Inicializa e carrega as JTables
+            carregarDadosNaTabela("contas", JTContas);
+            carregarDadosNaTabela("publicacoes", JTPublicacoes);
+            
+            // Inicializa a JList para ONGs
+            carregarListaOngs(controller.getOngs());
+            
+        } catch (Exception e) {
+            System.err.println("ERRO FATAL AO CARREGAR DADOS INICIAIS: " + e.getMessage());
+            e.printStackTrace();
+        }
         
         // Configurações do InternalFrame
         setClosable(true);
@@ -52,58 +77,133 @@ private final AdminController controller = new AdminController();
     
     // --- LÓGICA DE CARREGAMENTO DE DADOS NAS TABELAS ---
 
+    // --- LÓGICA AUXILIAR DE CARREGAMENTO DE LISTA (APROVAÇÕES PENDENTES) ---
+
+    private void carregarListaAprovacoes(List<Document> lista) {
+        if (lista == null) {
+            lista = Collections.emptyList();
+        }
+        listModelAprovacoes = new DefaultListModel<>();  
+        mapAprovacoes.clear(); 
+
+        for (Document d : lista) {
+            String ongId = d.getObjectId("_id").toString();
+            String razaoSocial = d.getString("razaoSocial");
+            String cnpj = d.getString("cnpj");
+            
+            String chaveExibicao = razaoSocial + " | CNPJ: " + cnpj + " (ID: " + ongId.substring(0, 24) + ")";
+            
+            listModelAprovacoes.addElement(chaveExibicao);
+            mapAprovacoes.put(chaveExibicao, d);
+        }
+        
+        jListOngs.setModel(listModelAprovacoes); 
+    }
+    
+// --- LÓGICA DE CARREGAMENTO E ROTEAMENTO (JTables) ---
+
     private void carregarDadosNaTabela(String tipo, JTable tabela) {
-        List<Document> dados = tipo.equals("contas") ? controller.getContas() : controller.getPublicacoes();
+        List<Document> dados;
+
+        // 1. ROTEAMENTO DO MODEL: OBTÉM OS DADOS DO CONTROLLER
+        if (tipo.equals("contas")) {
+            dados = controller.getContas();
+        } else if (tipo.equals("publicacoes")) {
+            dados = controller.getPublicacoes();
+        } else { 
+            // Tipo desconhecido (ONGs é carregado separadamente), limpa a tabela e retorna
+            tabela.setModel(new DefaultTableModel());
+            return;
+        }
 
         if (dados.isEmpty()) {
             tabela.setModel(new DefaultTableModel());
             return;
         }
 
+        // 2. LÓGICA DE EXIBIÇÃO PARA CONTAS E PUBLICAÇÕES
         String[] colunas;
+        DefaultTableModel model;
+
         if (tipo.equals("contas")) {
-            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email"}; 
-        } else { 
-            colunas = new String[]{"Cód. Publicação", "Cód. Usuário", "Título", "Texto", "Data", "Imagens"}; 
-        }
+            // --- CONFIGURAÇÃO DA TABELA DE CONTAS ---
+            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CNPJ", "Email", "Descrição"}; 
+            model = new DefaultTableModel(colunas, 0);
 
-        DefaultTableModel model = new DefaultTableModel(colunas, 0);
-
-        for (Document doc : dados) {
-            if (tipo.equals("contas")) {
+            for (Document doc : dados) {
                 model.addRow(new Object[]{
-                    // LENDO CAMPOS MINÚSCULOS CONFORME O SEU BANCO
-                    doc.getObjectId("_id").toString().substring(0, 8) + "...", // Usando o _id truncado
-                    doc.getString("nome"),          // ATUALIZADO: 'nome'
-                    doc.getString("status"),        // ATUALIZADO: 'status'
-                    doc.getString("cpf"),          // ATUALIZADO: 'cpf'
-                    doc.getString("email"),         // ATUALIZADO: 'email'
+                    doc.getObjectId("_id").toString().substring(0, 24),
+                    doc.getString("nome"),          
+                    doc.getString("status"),        
+                    doc.getString("cnpj"),          
+                    doc.getString("email"),         
+                    doc.getString("descricao")      
                 });
-            } else { // publicacoes
-                // Formata a data para exibição
-                String dataPub = "N/A";
-                if (doc.get("DataPublicacao") instanceof java.util.Date) {
-                    // Formata o objeto Date do MongoDB para uma String amigável
-                    dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("DataPublicacao"));
-                }
+            }
+        } else { // tipo.equals("publicacoes")
+            // --- CONFIGURAÇÃO DA TABELA DE PUBLICAÇÕES ---
+            colunas = new String[]{"Cód. Publicação (ID)", "Título", "Descrição", "Criado Por (ID)", "Data", "Imagens"}; 
+            model = new DefaultTableModel(colunas, 0);
 
-                // Obtém a lista de imagens (como ArrayList)
-                List<String> imagens = doc.get("Imagens", List.class);
+            for (Document doc : dados) {
+                String pubId = doc.getObjectId("_id").toString(); 
+                
+                String criadorId = doc.get("criadoPor") instanceof ObjectId
+                                   ? doc.getObjectId("criadoPor").toString()
+                                   : "N/A";
+                                   
+                String dataPub = "N/A";
+                if (doc.get("createdAt") instanceof java.util.Date) {
+                    dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("createdAt"));
+                }
+                
+                List<?> imagens = doc.get("imagem", List.class);
                 String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
 
                 model.addRow(new Object[]{
-                    doc.getInteger("CodPubli"), // Novo: CodPubli
-                    doc.getInteger("CodUsuario"), // Novo: CodUsuario
-                    doc.getString("Titulo"),    // Novo: Titulo
-                    doc.getString("Texto"),
-                    dataPub,                    // Novo: Data Formatada
-                    numImagens + " Arquivos"     // Novo: Contagem de Imagens
+                    pubId.substring(0, 24),
+                    doc.getString("titulo"),
+                    doc.getString("descricao"),
+                    criadorId.substring(0, 24),
+                    dataPub,
+                    numImagens + " Arquivos"
                 });
             }
         }
 
-        // 3. Define o modelo na tabela
         tabela.setModel(model);
+    }
+    
+    
+    private void carregarContasNaTabela (List<Document> dados){
+        
+        if (dados == null || dados.isEmpty()){
+            JTContas.setModel(new DefaultTableModel());
+            return;
+        }
+        
+        String[] colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email"}; 
+        DefaultTableModel model = new DefaultTableModel(colunas, 0);
+        
+        for (Document doc : dados){
+            String contaId = doc.get("_id").toString();
+            String contaNome = doc.get("nome").toString();
+            String contaStatus = doc.get("status").toString();
+            String contaCPF = doc.get("cpf").toString();
+            String contaEmail = doc.get("email").toString();
+            
+            
+            model.addRow(new Object[]{
+                contaId.substring(0, 24), 
+                contaNome,
+                contaStatus,
+                contaCPF,
+                contaEmail,
+            });
+        }
+        
+        JTContas.setModel(model);
+        
     }
     
 private void carregarPublicacoesNaTabela(List<Document> dados) {
@@ -137,10 +237,10 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
 
         // Montagem da linha (lendo todos os campos minúsculos)
         model.addRow(new Object[]{
-            pubId.substring(0, 8) + "...",      
+            pubId.substring(0, 24),      
             doc.getString("titulo"),            // Lendo 'titulo'
             doc.getString("descricao"),         // Lendo 'descricao' (o antigo 'Texto')
-            criadorId.substring(0, 8) + "...",  
+            criadorId.substring(0, 24),  
             dataPub,                            
             numImagens + " Arquivos"     
         });
@@ -149,6 +249,151 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
     JTPublicacoes.setModel(model);
 }
     
+
+
+
+// --- LÓGICA AUXILIAR DE CARREGAMENTO DE LISTA (ONGs) ---
+
+    private void carregarListaOngs(List<Document> lista) {
+        if (lista == null) {
+            lista = Collections.emptyList();
+        }
+        listModelOngs = new DefaultListModel<>();  
+        mapOngs.clear(); 
+
+        for (Document d : lista) {
+            String ongId = d.getObjectId("_id").toString();
+            String razaoSocial = d.getString("razaoSocial");
+            String cnpj = d.getString("cnpj");
+            
+            String chaveExibicao = ongId.substring(0, 24) + " | " + razaoSocial + " (" + cnpj + ")";
+            
+            listModelOngs.addElement(chaveExibicao);
+            mapOngs.put(chaveExibicao, d);
+        }
+        
+        // Atualiza o modelo da nova JList de ONGs
+        jListOngs.setModel(listModelOngs); 
+    }
+
+private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
+    if (!e.getValueIsAdjusting()) {
+        
+        String chaveSelecionada = jListOngs.getSelectedValue();
+        
+        // --- 1. Lógica de Verificação e Atribuição ---
+        // Usamos mapOngs aqui, que deve conter ONGs REGISTRADAS
+        if (chaveSelecionada == null || mapOngs.isEmpty()) { 
+            TADetalhesOngs.setText("Selecione uma ONG para ver os detalhes.");
+            // 🚨 Use ongSelecionada, pois esta é a variável de estado para ONGs
+            ongSelecionada = null; 
+            return;
+        }
+        
+        // CRÍTICO: Busca o Documento no mapOngs
+        ongSelecionada = mapOngs.get(chaveSelecionada); 
+        
+        // Checagem de segurança
+        if (ongSelecionada == null) {
+            TADetalhesOngs.setText("Erro ao carregar detalhes: Documento não encontrado no cache do mapa.");
+            return;
+        }
+
+        // --- 2. Montagem do Texto de Detalhes (Usando ongSelecionada) ---
+        
+        // Endereço
+        String enderecoDisplay = "N/A";
+        Document endereco = ongSelecionada.get("endereco", Document.class);
+        if (endereco != null) {
+            String rua = endereco.getString("rua") != null ? endereco.getString("rua") : "";
+            String numeroEnd = endereco.getString("numeroEnd") != null ? endereco.getString("numeroEnd") : "";
+            String complemento = endereco.getString("complemento") != null ? endereco.getString("complemento") : "";
+            String bairro = endereco.getString("bairro") != null ? endereco.getString("bairro") : "";
+            String cep = endereco.getString("cep") != null ? endereco.getString("cep") : "";
+            String cidade = endereco.getString("cidade") != null ? endereco.getString("cidade") : "";
+            String estado = endereco.getString("estado") != null ? ongSelecionada.getString("estado") : ""; // Atenção: deve ser ongSelecionada.getString("estado") se for um campo simples
+            
+            enderecoDisplay = String.format("Logradouro: %s \n Numero: %s \n Complemento: %s \n Bairro: %s \n CEP: %s \n Cidade: %s \n Estado: %s \n", rua, numeroEnd, complemento, bairro, cep, cidade, estado).trim();
+        }
+        
+        // Redes Sociais
+        String redesDisplay = "Nenhuma";
+        Document redeSocial = ongSelecionada.get("redeSocial", Document.class);
+        if (redeSocial != null) { 
+            String instagram = redeSocial.getString("instagram") != null ? redeSocial.getString("instagram") : "";
+            String facebook = redeSocial.getString("facebook") != null ? redeSocial.getString("facebook") : "";
+            String linkedin = redeSocial.getString("linkedin") != null ? redeSocial.getString("linkedin") : "";
+            String site = redeSocial.getString("site") != null ? redeSocial.getString("site") : "";
+            
+            redesDisplay = String.format("Instagram: %s \n Facebook: %s \n Linkedin: %s \n Site: %s \n", instagram, facebook, linkedin, site );
+        }
+
+        List<?> assignedToList = ongSelecionada.get("assignedTo", List.class);
+        int totalAtribuidos = (assignedToList != null) ? assignedToList.size() : 0;
+        
+        // Montagem do Texto de Detalhes
+        String detalhes = String.format(
+            "--- DETALHES DA ONG ---\n" +
+            "ID: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
+            "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
+            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s\nAtribuídos: %d usuário(s)",
+            ongSelecionada.getObjectId("_id").toString(),
+            ongSelecionada.getString("razaoSocial"),
+            ongSelecionada.getString("nomeFantasia"),
+            ongSelecionada.getString("cnpj"),
+            ongSelecionada.getString("cpf"),
+            ongSelecionada.getString("repLegal"),
+            ongSelecionada.getString("causaSocial"),
+            ongSelecionada.getString("telefone"),
+            ongSelecionada.getString("email"),
+            enderecoDisplay,
+            redesDisplay,
+            ongSelecionada.getString("descricao"),
+            totalAtribuidos
+        );
+        TADetalhesOngs.setText(detalhes);
+        
+        // 3. Ocultamos o botão Gerenciar, conforme seu pedido
+    }
+}
+    
+    public AdminController getController() {
+     return this.controller;
+    }
+    
+    
+    
+    public void atualizarListaAprovacoes() {
+    // 🚨 ATENÇÃO: Se você usa abas, garanta que este método chame a lógica
+    // de recarregamento da JList da ABA DE APROVAÇÕES.
+    
+    // Assumindo que você tem um método para carregar a lista de aprovações
+    // (Pode ser que este método esteja em JFAprovacao.java se você a estiver usando)
+    
+    // Se a lógica de aprovação está em JFConsulta:
+    // List<Document> aprovacoes = controller.getAprovacoes();
+    // carregarListaAprovacoes(aprovacoes); // Este método precisa existir
+    
+    // Se a lógica de aprovação está em outra tela (JFAprovacao),
+    // você precisa garantir que essa tela seja a que está aberta e recarregue.
+    
+    // *** A SOLUÇÃO MAIS SIMPLES É CRIAR A LÓGICA AQUI SE VOCÊ ESTIVER USANDO A ABA 'ONGs' ***
+    // Se você estiver usando a JList na aba ONGs para APROVAÇÃO, insira aqui o código:
+    // carregarListaOngs(controller.getAprovacoes()); 
+    
+    // Se você estiver usando a aba de consulta para ver ONGs REGISTRADAS,
+    // e o JFGerenciarONG for chamado de JFAprovacao, você terá que adaptar.
+    
+    // Como a tela pai é JFConsulta, vou assumir que você tem um método
+    // para carregar a lista de ONGs (mesmo que seja a de aprovação)
+    
+    logger.info("Tentativa de recarregar a lista de aprovações.");
+    
+    // *** Se você estiver usando o código de APROVAÇÃO na ABA JFConsulta ***
+    // Se 'carregarListaOngs' foi adaptado para APROVAÇÕES:
+    // List<Document> listaAprovacoes = controller.getAprovacoes();
+    // carregarListaOngs(listaAprovacoes); // O método de carregamento precisa ser público ou acessível
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -174,6 +419,15 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
         btnPesquisarPublicacoes = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         JTPublicacoes = new javax.swing.JTable();
+        jPanel1 = new javax.swing.JPanel();
+        Ongs = new javax.swing.JPanel();
+        jLabel3 = new javax.swing.JLabel();
+        JTFCampoPesquisaOngs = new javax.swing.JTextField();
+        btnPesquisarOngs = new javax.swing.JButton();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jListOngs = new javax.swing.JList<>();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        TADetalhesOngs = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -229,20 +483,19 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
         ContasLayout.setHorizontalGroup(
             ContasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(ContasLayout.createSequentialGroup()
-                .addGap(60, 60, 60)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(JTFCampoPesquisaContas, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnPesquisarContas)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btnSalvarPerfil)
-                .addContainerGap(26, Short.MAX_VALUE))
-            .addGroup(ContasLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1)
+                .addGroup(ContasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(ContasLayout.createSequentialGroup()
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(JTFCampoPesquisaContas, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnPesquisarContas)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 283, Short.MAX_VALUE)
+                        .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnSalvarPerfil))
+                    .addComponent(jScrollPane1))
                 .addContainerGap())
         );
         ContasLayout.setVerticalGroup(
@@ -256,13 +509,13 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
                     .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnSalvarPerfil))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 345, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
         tabbedPane.addTab("Contas", Contas);
 
-        jLabel2.setText("Pesquisar (Cód.Usuário, Cód.Publicação, Texto, Título):");
+        jLabel2.setText("Pesquisar (Cód.Publicação, Título, Descrição, Cód.Usuário,):");
 
         btnPesquisarPublicacoes.setText("Pesquisar");
         btnPesquisarPublicacoes.addActionListener(new java.awt.event.ActionListener() {
@@ -289,17 +542,15 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
         PublicacoesLayout.setHorizontalGroup(
             PublicacoesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(PublicacoesLayout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(PublicacoesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(PublicacoesLayout.createSequentialGroup()
-                        .addGap(60, 60, 60)
                         .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(60, 60, 60)
                         .addComponent(JTFCampoPesquisaPublicacoes)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnPesquisarPublicacoes))
-                    .addGroup(PublicacoesLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 775, Short.MAX_VALUE)))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 1075, Short.MAX_VALUE))
                 .addContainerGap())
         );
         PublicacoesLayout.setVerticalGroup(
@@ -311,11 +562,90 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
                     .addComponent(JTFCampoPesquisaPublicacoes, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnPesquisarPublicacoes))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 345, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
         tabbedPane.addTab("Publicações", Publicacoes);
+
+        jLabel3.setText("Pesquisar (Cód.ONG, Razão Social, CNPJ):");
+
+        btnPesquisarOngs.setText("Pesquisar");
+        btnPesquisarOngs.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPesquisarOngsActionPerformed(evt);
+            }
+        });
+
+        jListOngs.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jListOngs.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+                jListOngsValueChanged(evt);
+            }
+        });
+        jScrollPane3.setViewportView(jListOngs);
+
+        TADetalhesOngs.setColumns(20);
+        TADetalhesOngs.setRows(5);
+        jScrollPane4.setViewportView(TADetalhesOngs);
+
+        javax.swing.GroupLayout OngsLayout = new javax.swing.GroupLayout(Ongs);
+        Ongs.setLayout(OngsLayout);
+        OngsLayout.setHorizontalGroup(
+            OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(OngsLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(OngsLayout.createSequentialGroup()
+                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(56, 56, 56)
+                        .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.DEFAULT_SIZE, 531, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnPesquisarOngs)
+                        .addGap(102, 102, 102))
+                    .addGroup(OngsLayout.createSequentialGroup()
+                        .addComponent(jScrollPane3)
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
+        );
+        OngsLayout.setVerticalGroup(
+            OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(OngsLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnPesquisarOngs))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 351, Short.MAX_VALUE)
+                    .addComponent(jScrollPane4))
+                .addContainerGap())
+        );
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 1087, Short.MAX_VALUE)
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addComponent(Ongs, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 404, Short.MAX_VALUE)
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addComponent(Ongs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGap(0, 6, Short.MAX_VALUE)))
+        );
+
+        tabbedPane.addTab("ONGs", jPanel1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -339,12 +669,19 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
 
     private void btnPesquisarContasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarContasActionPerformed
         // TODO add your handling code here:
-        final String termo = JTFCampoPesquisaContas.getText();
-        JOptionPane.showMessageDialog(this, 
-            "Simulando filtro de Contas por termo: " + termo + 
-            "\n(Em produção, faria uma consulta filtrada ao MongoDB).");
-        // Em um projeto real, você chamaria um método filtrado no controller aqui:
-        // carregarDadosNaTabela("contas", controller.filtrarContas(termo));
+        final String termo = JTFCampoPesquisaContas.getText().trim();
+        
+        List<Document> resultados;
+        
+        if (termo.isEmpty()){
+            resultados = controller.getContas();
+        } else {
+            resultados = controller.filtrarContas(termo);
+        }
+        
+        
+        carregarContasNaTabela(resultados);
+        
     }//GEN-LAST:event_btnPesquisarContasActionPerformed
 
     private void btnPesquisarPublicacoesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarPublicacoesActionPerformed
@@ -443,6 +780,34 @@ if (contaSelecionadaId == null) return;
     }
     }//GEN-LAST:event_tabbedPaneStateChanged
 
+    private void btnPesquisarOngsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarOngsActionPerformed
+        // Assume que você tem um campo de texto chamado JTFCampoPesquisaOngs
+    String termo = JTFCampoPesquisaOngs.getText().trim();
+    
+    List<Document> resultados;
+    
+    if (termo.isEmpty()) {
+        // Se o campo estiver vazio, carrega todos os dados
+        resultados = controller.getOngs();
+    } else {
+        // Se houver um termo, chama o método de filtro
+        resultados = controller.filtrarOngs(termo);
+    }
+    
+    // Chama o método auxiliar para exibir os resultados na JTable de ONGs
+    carregarListaOngs(resultados);
+    
+    }//GEN-LAST:event_btnPesquisarOngsActionPerformed
+
+    private void jListOngsValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jListOngsValueChanged
+        // TODO add your handling code here:
+        // Chamada ao método de exibição de detalhes da ONG
+        exibirDetalhesOng(evt);
+    
+
+    // Nota: O método auxiliar exibirDetalhesOng(evt) deve existir em sua classe.
+    }//GEN-LAST:event_jListOngsValueChanged
+
     /**
      * @param args the command line arguments
      */
@@ -472,17 +837,26 @@ if (contaSelecionadaId == null) return;
     private javax.swing.JPanel Contas;
     private javax.swing.JTable JTContas;
     private javax.swing.JTextField JTFCampoPesquisaContas;
+    private javax.swing.JTextField JTFCampoPesquisaOngs;
     private javax.swing.JTextField JTFCampoPesquisaPublicacoes;
     private javax.swing.JTable JTPublicacoes;
+    private javax.swing.JPanel Ongs;
     private javax.swing.JPanel Publicacoes;
+    private javax.swing.JTextArea TADetalhesOngs;
     private javax.swing.JButton btnPesquisarContas;
+    private javax.swing.JButton btnPesquisarOngs;
     private javax.swing.JButton btnPesquisarPublicacoes;
     private javax.swing.JButton btnSalvarPerfil;
     private javax.swing.JComboBox<String> cbxNovoPerfil;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JList<String> jListOngs;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JTabbedPane tabbedPane;
     // End of variables declaration//GEN-END:variables
 }

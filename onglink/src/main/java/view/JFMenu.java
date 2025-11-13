@@ -36,14 +36,14 @@ public class JFMenu extends javax.swing.JFrame {
         desktopPane = new javax.swing.JDesktopPane();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
-        jMenuItemAprovacao = new javax.swing.JMenuItem();
+        jMenuItemEditar = new javax.swing.JMenuItem();
         jMenuItemConsulta = new javax.swing.JMenuItem();
         jMenuItemDenuncia = new javax.swing.JMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
         jMenuItemSair = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setPreferredSize(new java.awt.Dimension(900, 600));
+        setPreferredSize(new java.awt.Dimension(1200, 720));
 
         desktopPane.setToolTipText("");
         desktopPane.setLayout(new java.awt.BorderLayout());
@@ -51,13 +51,13 @@ public class JFMenu extends javax.swing.JFrame {
 
         jMenu1.setText("Gestão");
 
-        jMenuItemAprovacao.setText("Aprovação");
-        jMenuItemAprovacao.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemEditar.setText("Editar ONG");
+        jMenuItemEditar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemAprovacaoActionPerformed(evt);
+                jMenuItemEditarActionPerformed(evt);
             }
         });
-        jMenu1.add(jMenuItemAprovacao);
+        jMenu1.add(jMenuItemEditar);
 
         jMenuItemConsulta.setText("Consulta");
         jMenuItemConsulta.addActionListener(new java.awt.event.ActionListener() {
@@ -116,32 +116,38 @@ public class JFMenu extends javax.swing.JFrame {
     consultaFrame.setVisible(true);
     }//GEN-LAST:event_jMenuItemConsultaActionPerformed
 
-    private void jMenuItemAprovacaoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemAprovacaoActionPerformed
-        // TODO add your handling code here:
-    // 1. Verifica se a janela já está aberta para evitar duplicação (BOA PRÁTICA)
-    for (JInternalFrame frame : desktopPane.getAllFrames()) {
-        if (frame instanceof JFAprovacao) {
+    private void jMenuItemEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEditarActionPerformed
+// 1. Verifica se a janela JFEditarONG já está aberta
+    for (javax.swing.JInternalFrame openFrame : desktopPane.getAllFrames()) {
+        
+        if (openFrame instanceof JFEditarONG) {
             try {
-                frame.setSelected(true); // Traz para frente se já estiver aberta
+                // O CAST AGORA É VÁLIDO porque JFEditarONG é um JInternalFrame
+                JFEditarONG editarFrame = (JFEditarONG) openFrame; 
+                
+                editarFrame.setSelected(true);
                 return;
             } catch (java.beans.PropertyVetoException ex) {
-                // Ignora ou trata erro
+                // Tratamento de erro
             }
         }
     }
     
-    // 2. Cria a instância da tela interna refatorada
-    JFAprovacao aprovacaoFrame = new JFAprovacao(); 
+    // 2. CRIA A NOVA INSTÂNCIA (agora é um JInternalFrame)
+    JFEditarONG editarFrame = new JFEditarONG(); 
     
-    // 3. Adiciona ao JDesktopPane
-    desktopPane.add(aprovacaoFrame);
+    // 3. Configura e exibe
+    editarFrame.pack(); 
+    desktopPane.add(editarFrame);
+    editarFrame.setVisible(true);
     
-    // 4. Exibe a janela
-    aprovacaoFrame.setVisible(true);
+    // Centraliza
+    editarFrame.setLocation(
+        (desktopPane.getWidth() - editarFrame.getWidth()) / 2, 
+        (desktopPane.getHeight() - editarFrame.getHeight()) / 2
+    );
 
-
-
-    }//GEN-LAST:event_jMenuItemAprovacaoActionPerformed
+    }//GEN-LAST:event_jMenuItemEditarActionPerformed
 
     private void jMenuItemDenunciaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemDenunciaActionPerformed
         // TODO add your handling code here:
@@ -192,9 +198,9 @@ public class JFMenu extends javax.swing.JFrame {
     private javax.swing.JDesktopPane desktopPane;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItemAprovacao;
     private javax.swing.JMenuItem jMenuItemConsulta;
     private javax.swing.JMenuItem jMenuItemDenuncia;
+    private javax.swing.JMenuItem jMenuItemEditar;
     private javax.swing.JMenuItem jMenuItemSair;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     // End of variables declaration//GEN-END:variables

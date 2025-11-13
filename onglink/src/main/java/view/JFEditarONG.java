@@ -1,0 +1,504 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ */
+package view;
+
+import controller.AdminController;
+import org.bson.Document;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author Felipe
+ */
+public class JFEditarONG extends javax.swing.JInternalFrame {
+
+private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName());
+    private final AdminController controller = new AdminController();
+    
+    // --- VARIÁVEIS DE ESTADO E MAPEAMENTO ---
+    private Map<String, Document> ongMap = new HashMap<>(); // Mapeia Nome Fantasia para Documento
+    private Document ongSelecionada; // ONG selecionada para edição
+    private String ongIdSelecionada;
+    
+
+
+    // Construtor
+    public JFEditarONG() {
+        initComponents();
+        carregarOngsNoComboBox(); // 🚨 Carrega as opções no ComboBox na inicialização
+        
+        setTitle("Edição e Gestão de ONGs");
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        
+    }
+    
+    // Construtor sem parâmetros gerado (manter para evitar erro)
+     
+    
+    // --- LÓGICA DE CARREGAMENTO E MUDANÇA DE ESTADO ---
+    
+    /**
+     * Carrega todas as ONGs registradas no ComboBox, mostrando o Nome Fantasia.
+     */
+    private void carregarOngsNoComboBox() {
+        List<Document> todasOngs = controller.getOngs(); 
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        
+        model.addElement("--- Selecione para Editar ---");
+        
+        for (Document ong : todasOngs) {
+            String nomeFantasia = ong.getString("nomeFantasia");
+            if (nomeFantasia != null) {
+                model.addElement(nomeFantasia);
+                ongMap.put(nomeFantasia, ong); // Mapeia para o Documento completo
+            }
+        }
+        
+        if (cbxOngs != null) {
+            cbxOngs.setModel(model);
+            cbxOngs.addActionListener(this::cbxOngsSelectionChanged);
+        }
+    }
+
+    /**
+     * Método disparado ao selecionar um item no ComboBox.
+     */
+    private void cbxOngsSelectionChanged(ActionEvent evt) {
+        String nomeFantasiaSelecionado = (String) cbxOngs.getSelectedItem();
+        
+        if (nomeFantasiaSelecionado == null || nomeFantasiaSelecionado.startsWith("---")) {
+           
+            return;
+        }
+        
+        Document ongDoc = ongMap.get(nomeFantasiaSelecionado);
+        
+        if (ongDoc != null) {
+            ongSelecionada = ongDoc; 
+            ongIdSelecionada = ongDoc.getObjectId("_id").toString();
+            preencherFormulario(ongDoc);
+             
+        }  
+    }
+
+    /**
+     * Insere os dados da ONG selecionada nos campos de texto para edição/visualização.
+     */
+    private void preencherFormulario(Document ongDoc) {
+        if (ongDoc == null) return;
+        
+        
+        String enderecoDisplay = "N/A";
+        Document endereco = ongDoc.get("endereco", Document.class);
+        if (endereco != null) {
+            String rua = endereco.getString("rua") != null ? endereco.getString("rua") : "";
+            String numeroEnd = endereco.getString("numeroEnd") != null ? endereco.getString("numeroEnd") : "";
+            String complemento = endereco.getString("complemento") != null ? endereco.getString("complemento") : "";
+            String bairro = endereco.getString("bairro") != null ? endereco.getString("bairro") : "";
+            String cep = endereco.getString("cep") != null ? endereco.getString("cep") : "";
+            String cidade = endereco.getString("cidade") != null ? endereco.getString("cidade") : "";
+            String estado = endereco.getString("estado") != null ? endereco.getString("estado") : ""; // Atenção: deve ser ongSelecionada.getString("estado") se for um campo simples
+            
+            enderecoDisplay = String.format("Logradouro: %s \n Numero: %s \n Complemento: %s \n Bairro: %s \n CEP: %s \n Cidade: %s \n Estado: %s \n", rua, numeroEnd, complemento, bairro, cep, cidade, estado).trim();
+        }
+        
+        // Redes Sociais
+        String redesDisplay = "Nenhuma";
+        Document redeSocial = ongDoc.get("redeSocial", Document.class);
+        if (redeSocial != null) { 
+            String instagram = redeSocial.getString("instagram") != null ? redeSocial.getString("instagram") : "";
+            String facebook = redeSocial.getString("facebook") != null ? redeSocial.getString("facebook") : "";
+            String linkedin = redeSocial.getString("linkedin") != null ? redeSocial.getString("linkedin") : "";
+            String site = redeSocial.getString("site") != null ? redeSocial.getString("site") : "";
+            
+            redesDisplay = String.format("Instagram: %s \n Facebook: %s \n Linkedin: %s \n Site: %s \n", instagram, facebook, linkedin, site );
+        }
+        
+        // Link dos documentos
+//        String documentosDisplay = "N/A";
+//        Document arquivosLegais = ongDoc.get("arquivosLegais", Document.class);
+//        if (arquivosLegais !=null){
+//            String doc1 = arquivosLegais.getString("0") != null ? arquivosLegais.getString("0") : "";
+//            String doc2 = arquivosLegais.getString("1") != null ? arquivosLegais.getString("1") : "";
+//            
+//            documentosDisplay = String.format("\n Documento 1: %s, \n Docmuento 2: %s \n ", doc1, doc2);
+//        }
+  
+        List<String> documentosDisplay = ongDoc.getList("arquivosLegais", String.class);
+
+        String doc1 = "Nenhum link de documento encontrado";
+        String doc2 = "Nenhum link de documento encontrado"; 
+
+        // 2. Verifica se a lista não está vazia
+        if (documentosDisplay != null && !documentosDisplay.isEmpty()) {
+            // 3. Extrai o primeiro link do array (índice 0)
+            doc1 = documentosDisplay.get(0);
+            doc2 = documentosDisplay.get(1);
+            
+            //documentosDisplay = String.format("\n Documento 1: %s, \n Docmuento 2: %s \n ", doc1, doc2);
+        }
+
+        List<?> assignedToList = ongDoc.get("assignedTo", List.class);
+        int totalAtribuidos = (assignedToList != null) ? assignedToList.size() : 0;
+
+        
+        List<Document> assignedUsers = controller.getAssignedUsersDetails(ongDoc);
+        StringBuilder assignedUsersDisplay = new StringBuilder();
+        assignedUsersDisplay.append("\n--------------------------------------------\n");
+        assignedUsersDisplay.append(" USUÁRIOS ATRIBUÍDOS \n");
+        assignedUsersDisplay.append("--------------------------------------------\n");
+
+        if (assignedUsers.isEmpty()) {
+            assignedUsersDisplay.append("Nenhum usuário atribuído a esta ONG.");
+        } else {
+            for (Document user : assignedUsers) {
+                String userId = user.getObjectId("_id").toString();
+                String nome = user.getString("nome") != null ? user.getString("nome") : "N/A";
+                String email = user.getString("email") != null ? user.getString("email") : "N/A";
+
+                assignedUsersDisplay.append("ID: ").append(userId).append("\n");
+                assignedUsersDisplay.append("Nome: ").append(nome).append("\n");
+                assignedUsersDisplay.append("Email: ").append(email).append("\n");
+
+                assignedUsersDisplay.append("--- \n");
+            }
+        }
+        
+        
+        
+
+        String detalhesComplementares = String.format(
+            "\n--- INFORMAÇÕES DE REGISTRO ---\n" +
+            "ID da ONG: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
+            "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
+            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s\n \n\n \n Documentos: \n  doc1: %s \n\n doc2: %s \n\n Atribuídos a %d usuário(s)",
+            ongDoc.getObjectId("_id").toString(),
+            ongDoc.getString("razaoSocial"),
+            ongDoc.getString("nomeFantasia"),
+            ongDoc.getString("cnpj"),
+            ongDoc.getString("cpf"),
+            ongDoc.getString("repLegal"),
+            ongDoc.getString("causaSocial"),
+            ongDoc.getString("telefone"),
+            ongDoc.getString("email"),
+            enderecoDisplay,
+            redesDisplay,
+            ongDoc.getString("descricao"),
+            
+            doc1,
+            doc2,
+            totalAtribuidos
+        );
+        
+        String textoFinal = detalhesComplementares + assignedUsersDisplay.toString();
+        
+        if (TADetalhesOng != null) {
+            // Limpa e anexa os detalhes completos no JTextArea principal
+            TADetalhesOng.setText("");
+            TADetalhesOng.append(textoFinal);
+            TADetalhesOng.setCaretPosition(0); 
+        }
+        
+        
+        
+
+    }    
+
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel4 = new javax.swing.JPanel();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        jPanel5 = new javax.swing.JPanel();
+        jScrollPane7 = new javax.swing.JScrollPane();
+        TADetalhesOng = new javax.swing.JTextArea();
+        jPanel6 = new javax.swing.JPanel();
+        btnSalvarEdicao = new javax.swing.JButton();
+        jLabel13 = new javax.swing.JLabel();
+        jLabel14 = new javax.swing.JLabel();
+        jLabel15 = new javax.swing.JLabel();
+        jLabel16 = new javax.swing.JLabel();
+        btnAprovarONG = new javax.swing.JButton();
+        btnReprovarONG = new javax.swing.JButton();
+        brnClose = new javax.swing.JButton();
+        jPanel7 = new javax.swing.JPanel();
+        jLabel17 = new javax.swing.JLabel();
+        cbxOngs = new javax.swing.JComboBox<>();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        TADetalhesOng.setColumns(20);
+        TADetalhesOng.setRows(5);
+        jScrollPane7.setViewportView(TADetalhesOng);
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 537, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(278, Short.MAX_VALUE))
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 529, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(18, Short.MAX_VALUE))
+        );
+
+        jScrollPane5.setViewportView(jPanel5);
+
+        btnSalvarEdicao.setText("Salvar Edição");
+        btnSalvarEdicao.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSalvarEdicaoActionPerformed(evt);
+            }
+        });
+
+        jLabel13.setText("Salvar edição! -->");
+
+        jLabel14.setText("Aprovar ONG! -->");
+
+        jLabel15.setText("Reprovar ONG! -->");
+
+        jLabel16.setText("Fechar! -->");
+
+        btnAprovarONG.setText("Aprovar ONG");
+        btnAprovarONG.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAprovarONGActionPerformed(evt);
+            }
+        });
+
+        btnReprovarONG.setText("Reprovar ONG");
+        btnReprovarONG.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnReprovarONGActionPerformed(evt);
+            }
+        });
+
+        brnClose.setText("Fechar");
+        brnClose.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                brnCloseActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
+        jPanel6.setLayout(jPanel6Layout);
+        jPanel6Layout.setHorizontalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel14)
+                    .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel16, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(brnClose)
+                    .addComponent(btnReprovarONG)
+                    .addComponent(btnAprovarONG)
+                    .addComponent(btnSalvarEdicao))
+                .addContainerGap(192, Short.MAX_VALUE))
+        );
+        jPanel6Layout.setVerticalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel13)
+                    .addComponent(btnSalvarEdicao))
+                .addGap(27, 27, 27)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel14)
+                    .addComponent(btnAprovarONG))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel15)
+                    .addComponent(btnReprovarONG))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel16)
+                    .addComponent(brnClose))
+                .addContainerGap(66, Short.MAX_VALUE))
+        );
+
+        jLabel17.setText("Pesquisar ONG:");
+
+        cbxOngs.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
+        jPanel7.setLayout(jPanel7Layout);
+        jPanel7Layout.setHorizontalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel17)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(cbxOngs, 0, 313, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        jPanel7Layout.setVerticalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel17)
+                    .addComponent(cbxOngs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(34, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 556, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 547, Short.MAX_VALUE)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void brnCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_brnCloseActionPerformed
+        this.dispose();
+    }//GEN-LAST:event_brnCloseActionPerformed
+
+    private void btnReprovarONGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReprovarONGActionPerformed
+        JOptionPane.showMessageDialog(this, "Reprovar ONG - Lógica de status deve ser implementada no controller.", "Ação Pendente", JOptionPane.INFORMATION_MESSAGE);
+    }//GEN-LAST:event_btnReprovarONGActionPerformed
+
+    private void btnAprovarONGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAprovarONGActionPerformed
+        JOptionPane.showMessageDialog(this, "Aprovar ONG - Lógica de status deve ser implementada no controller.", "Ação Pendente", JOptionPane.INFORMATION_MESSAGE);
+    }//GEN-LAST:event_btnAprovarONGActionPerformed
+
+    private void btnSalvarEdicaoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalvarEdicaoActionPerformed
+
+    }//GEN-LAST:event_btnSalvarEdicaoActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new JFEditarONG().setVisible(true));
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextArea TADescricao;
+    private javax.swing.JTextArea TADescricao1;
+    private javax.swing.JTextArea TADetalhesOng;
+    private javax.swing.JTextField TFCausaSocial;
+    private javax.swing.JTextField TFCausaSocial1;
+    private javax.swing.JTextField TFNomeFantasia;
+    private javax.swing.JTextField TFNomeFantasia1;
+    private javax.swing.JTextField TFTelefone;
+    private javax.swing.JTextField TFTelefone1;
+    private javax.swing.JButton brnClose;
+    private javax.swing.JButton btnAprovarONG;
+    private javax.swing.JButton btnReprovarONG;
+    private javax.swing.JButton btnSalvarEdicao;
+    private javax.swing.JComboBox<String> cbxOngs;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JPanel jPanel;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
+    private javax.swing.JPanel jPanel7;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JScrollPane jScrollPane7;
+    // End of variables declaration//GEN-END:variables
+
+
+}

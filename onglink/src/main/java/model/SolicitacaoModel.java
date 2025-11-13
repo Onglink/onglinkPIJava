@@ -1,5 +1,6 @@
 package model;
 
+import static com.mongodb.client.model.Filters.in;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.Arrays; // Necessário para a popularPublicacoes
 
 import static com.mongodb.client.model.Filters.eq;
+
+import com.mongodb.client.model.Updates;
 
 public class SolicitacaoModel {
     // VARIÁVEIS DE COLEÇÃO CONFORME AS ÚLTIMAS ALTERAÇÕES
@@ -40,6 +43,9 @@ public class SolicitacaoModel {
         if (publicacoesCollection.countDocuments() == 0) {
             popularPublicacoes();
         }
+        if (ongsCollection.countDocuments() == 0){
+            popularOngs();
+        }
     }
 
     // ... [MÉTODOS DE ADMINISTRAÇÃO (Aprovação, Denúncia)] ...
@@ -62,6 +68,22 @@ public class SolicitacaoModel {
             return false;
         }
     }
+    
+    public boolean reprovarSolicitacao(String id) {
+        try {
+            ObjectId objId = new ObjectId(id);
+
+            // A reprovação geralmente significa apenas REMOVER a solicitação da fila
+            long deletedCount = solicitacoes_aprovacaoCollection.deleteOne(eq("_id", objId)).getDeletedCount();
+
+            return deletedCount > 0;
+        } catch (Exception e) {
+            // Logar o erro
+            return false;
+        }
+    }
+    
+    
 
     public List<Document> carregarDenuncias() {
         List<Document> list = new ArrayList<>();
@@ -83,7 +105,7 @@ public class SolicitacaoModel {
     }
 
     // ===============================================
-    // GESTÃO DE CONTAS (USANDO O NOVO NOME DE FUNÇÃO)
+    // GESTÃO DE CONTAS  
     // ===============================================
     
     public List<Document> carregarContas() {
@@ -98,6 +120,39 @@ public class SolicitacaoModel {
         return list;
     }
 
+    public List<Document> carregarOngs(){
+        List<Document> list = new ArrayList<>();
+        ongsCollection.find().into(list);
+        return list;
+    }    
+    
+    /**
+    * Busca um Documento de usuário na coleção 'usuarios' pelo seu _id.
+    */
+    public Document getUsuarioById(ObjectId userId) {
+       if (userId == null) {
+           return null;
+       }
+       // Assume que 'usuariosCollection' já foi inicializada no construtor
+       return usuariosCollection.find(eq("_id", userId)).first();
+    }    
+    
+    
+    //Ver depois para arrumar o de cima
+    public List<Document> getUsersByIds(List<ObjectId> userIds) {
+    if (userIds == null || userIds.isEmpty()) {
+        return new ArrayList<>();
+    }
+    
+    List<Document> users = new ArrayList<>();
+    
+    // Filtra na coleção 'usuarios' onde o _id está CONTIDO na lista userIds
+    usuariosCollection.find(in("_id", userIds)) // Usa o filtro $in
+                      .into(users);
+    
+    return users;
+}
+    
     /**
      * Atualiza o campo 'status' de um usuário no banco (ADMIN, USER, ONG).
      */
@@ -117,6 +172,73 @@ public class SolicitacaoModel {
         }
     }
 
+    
+    
+    public boolean aprovarEInserirONG(String solicitacaoId) {
+    try {
+        // 1. Localiza e converte o ID da solicitação
+        ObjectId id = new ObjectId(solicitacaoId);
+        Document solicitacaoDoc = solicitacoes_aprovacaoCollection.find(eq("_id", id)).first();
+        
+        if (solicitacaoDoc == null) {
+            System.err.println("Solicitação não encontrada: " + solicitacaoId);
+            return false;
+        }
+
+        // 2. Localiza o ID do Usuário e busca o Documento do usuário
+        ObjectId userId = solicitacaoDoc.getObjectId("usuarioId"); // *** PRESSUPOSTO: campo existe! ***
+        Document userDoc = getUsuarioById(userId); // Reutiliza o método getUsuarioById
+        
+        if (userDoc == null) {
+            System.err.println("Usuário associado à solicitação não encontrado.");
+            return false;
+        }
+
+        // 3. Monta o Documento da Nova ONG (Usando dados da Solicitacao E do Usuário)
+        Document novaOng = new Document();
+        
+        // Copia campos da SOLICITAÇÃO (Razão Social, CNPJ, Causa Social, etc.)
+        novaOng.append("razaoSocial", solicitacaoDoc.getString("razaoSocial"))
+               .append("nomeFantasia", solicitacaoDoc.getString("nomeFantasia"))
+               .append("cnpj", solicitacaoDoc.getString("cnpj"))
+               .append("causaSocial", solicitacaoDoc.getString("causaSocial"))
+               .append("telefone", solicitacaoDoc.getString("telefone"))
+               .append("endereco", solicitacaoDoc.get("endereco")) // Mantém o objeto aninhado
+               .append("redeSocial", solicitacaoDoc.get("redeSocial")) // Mantém o objeto aninhado
+               .append("descricao", solicitacaoDoc.getString("descricao"))
+               .append("dataFund", solicitacaoDoc.getString("dataFund")); // Mantém o valor original
+
+        // SOBRESCREVE/INSERE CAMPOS DO USUÁRIO (CPF, Rep. Legal, Email)
+        novaOng.append("repLegal", userDoc.getString("nome")) // Nome do usuário
+               .append("cpf", userDoc.getString("cpf"))       // CPF do usuário
+               .append("email", userDoc.getString("email"))   // Email do usuário
+               .append("usuarioId", userId)                   // Mantém o link para o usuário
+               .append("statusRegistro", "ATIVA") 
+               .append("dataAprovacao", LocalDate.now().toString());
+
+        // 4. Insere o novo documento na coleção de ONGs cadastradas
+        ongsCollection.insertOne(novaOng);
+        
+        // 5. CRÍTICO: ATUALIZA O STATUS DO USUÁRIO para "ONG"
+        usuariosCollection.updateOne(
+            eq("_id", userId),
+            Updates.set("status", "ONG")
+        );
+
+        // 6. Remove a solicitação original da fila
+        solicitacoes_aprovacaoCollection.deleteOne(eq("_id", id));
+
+        return true;
+
+    } catch (Exception e) {
+        System.err.println("Erro FATAL durante a aprovação e inserção da ONG: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+    
+    
+    
     // ===============================================
     // MÉTODOS DE POPULAÇÃO (AJUSTADOS PARA NOVOS NOMES DE COLEÇÃO)
     // ===============================================
@@ -189,4 +311,71 @@ private void popularPublicacoes() {
         .append("createdAt", dataExemplo);
     publicacoesCollection.insertOne(pub2);
 }
+
+
+
+    private void popularOngs(){
+    ongsCollection.deleteMany(new Document()); 
+    
+    // Usamos IDs de exemplo para garantir ObjectIds válidos
+    ObjectId idOng1 = new ObjectId("6901539530ab44fc0e2f56d7"); 
+    ObjectId idOng2 = new ObjectId("6901539530ab44fc0e2f56d8"); 
+    ObjectId idUsuarioAdmin = new ObjectId("65c345a98d02d0001f3b7d1c"); // Exemplo de ID de usuário
+
+    // --- Endereço e Rede Social Aninhados ---
+    Document endereco1 = new Document("rua", "Rua das Flores")
+        .append("numeroEnd", "100")
+        .append("cidade", "São Paulo")
+        .append("cep", "05422000");
+    
+    Document redes1 = new Document("instagram", "@VerdeEsperanca")
+        .append("site", "https://www.verdeesperanca.org");
+
+    // --- ONG 1: Exemplo Detalhado ---
+    ongsCollection.insertOne(new Document("_id", idOng1) 
+            .append("razaoSocial", "Instituto Verde Esperança Ltda") // Novo
+            .append("nomeFantasia", "Verde Esperança") // Novo
+            .append("cnpj", "11.123.456/0001-00")
+            .append("cpf", "111.222.333-44") // Novo
+            .append("repLegal", "Roberto Fernandes Lima") // Novo
+            .append("telefone", "15 3322-3322")
+            .append("email", "contato@verde.org")
+            .append("endereco", endereco1) // Objeto aninhado
+            .append("redeSocial", redes1) // Objeto aninhado
+            .append("descricao", "Focados na recuperação de áreas degradadas e educação ambiental.")
+            .append("dataFund", "2008-10-15") // Novo formato
+            .append("causaSocial", "Meio Ambiente") // Novo
+            .append("assignedTo", Arrays.asList(idUsuarioAdmin))); // Novo Array
+    
+    // --- ONG 2: Exemplo Simples ---
+    ongsCollection.insertOne(new Document("_id", idOng2)
+            .append("razaoSocial", "Ação Social do Bairro Ltda") 
+            .append("nomeFantasia", "ASB")
+            .append("cnpj", "22.345.678/0001-11")
+            .append("cpf", "555.666.777-88")
+            .append("repLegal", "Maria da Silva")
+            .append("telefone", "21 9988-7766")
+            .append("email", "asb@social.org")
+            .append("endereco", new Document("cidade", "Rio de Janeiro"))
+            .append("descricao", "Oferece apoio a famílias de baixa renda.")
+            .append("dataFund", "2015-05-20")
+            .append("causaSocial", "Assistência Social"));
+    }
+    
+    
+    // Método para atualizar campos de uma solicitação PENDENTE
+    public boolean atualizarDadosSolicitacao(String solicitacaoId, Document updates) {
+        try {
+            ObjectId objectId = new ObjectId(solicitacaoId);
+
+            solicitacoes_aprovacaoCollection.updateOne(
+                eq("_id", objectId), // Usa ObjectId para buscar
+                new Document("$set", updates)
+            );
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erro ao atualizar dados da solicitação: " + e.getMessage());
+            return false;
+        }
+    }
 }
