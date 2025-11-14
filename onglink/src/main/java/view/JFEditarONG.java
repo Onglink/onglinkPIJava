@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -34,12 +35,18 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         initComponents();
         carregarOngsNoComboBox(); // 🚨 Carrega as opções no ComboBox na inicialização
         
-        setTitle("Edição e Gestão de ONGs");
+        setTitle("Edição de Status Cadastral de ONGs");
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        
+        
         
     }
     
-    // Construtor sem parâmetros gerado (manter para evitar erro)
+    // --- MÉTODOS DE DADOS E ESTADO (Omitidos, mas funcionais) ---
+    
+    
+
+    
      
     
     // --- LÓGICA DE CARREGAMENTO E MUDANÇA DE ESTADO ---
@@ -121,15 +128,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             redesDisplay = String.format("Instagram: %s \n Facebook: %s \n Linkedin: %s \n Site: %s \n", instagram, facebook, linkedin, site );
         }
         
-        // Link dos documentos
-//        String documentosDisplay = "N/A";
-//        Document arquivosLegais = ongDoc.get("arquivosLegais", Document.class);
-//        if (arquivosLegais !=null){
-//            String doc1 = arquivosLegais.getString("0") != null ? arquivosLegais.getString("0") : "";
-//            String doc2 = arquivosLegais.getString("1") != null ? arquivosLegais.getString("1") : "";
-//            
-//            documentosDisplay = String.format("\n Documento 1: %s, \n Docmuento 2: %s \n ", doc1, doc2);
-//        }
+
   
         List<String> documentosDisplay = ongDoc.getList("arquivosLegais", String.class);
 
@@ -142,9 +141,28 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             doc1 = documentosDisplay.get(0);
             doc2 = documentosDisplay.get(1);
             
-            //documentosDisplay = String.format("\n Documento 1: %s, \n Docmuento 2: %s \n ", doc1, doc2);
+            
         }
 
+        
+        // ========================================================
+        // NOVO: Lógica de Carregamento e Seleção do Status
+        // ========================================================
+        
+        // 1. Define as opções disponíveis no ComboBox (você deve ter feito isso no Design, mas
+        // garantimos a lista aqui para fins de demonstração):
+        String[] opcoesStatus = {"EM ANALISE", "APROVADO", "REPROVADO", "SUSPENSO", "INATIVO"};
+        cbxSituacaoCadastral.setModel(new DefaultComboBoxModel<>(opcoesStatus));
+        
+        // 2. Lê o status atual do MongoDB (assumindo campo 'situacaoCadastral')
+        String statusAtual = ongDoc.getString("situacaoCadastral");
+        
+        if (cbxSituacaoCadastral != null && statusAtual != null) {
+            // 3. Pré-seleciona o valor correspondente no ComboBox (case-insensitive)
+            // Isso garante que o valor do banco esteja visível
+            cbxSituacaoCadastral.setSelectedItem(statusAtual.toUpperCase());
+        }
+        
         List<?> assignedToList = ongDoc.get("assignedTo", List.class);
         int totalAtribuidos = (assignedToList != null) ? assignedToList.size() : 0;
 
@@ -152,8 +170,8 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         List<Document> assignedUsers = controller.getAssignedUsersDetails(ongDoc);
         StringBuilder assignedUsersDisplay = new StringBuilder();
         assignedUsersDisplay.append("\n--------------------------------------------\n");
-        assignedUsersDisplay.append(" USUÁRIOS ATRIBUÍDOS \n");
-        assignedUsersDisplay.append("--------------------------------------------\n");
+        assignedUsersDisplay.append(" USUÁRIOS ATRIBUÍDOS ");
+        assignedUsersDisplay.append("\n--------------------------------------------\n");
 
         if (assignedUsers.isEmpty()) {
             assignedUsersDisplay.append("Nenhum usuário atribuído a esta ONG.");
@@ -175,11 +193,12 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         
 
         String detalhesComplementares = String.format(
-            "\n--- INFORMAÇÕES DE REGISTRO ---\n" +
-            "ID da ONG: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
+            "--- INFORMAÇÕES DE REGISTRO ---\n" +
+            "ID da ONG: %s\n Situação Cadastral: %s \n Razão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
             "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
-            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s\n \n\n \n Documentos: \n  doc1: %s \n\n doc2: %s \n\n Atribuídos a %d usuário(s)",
+            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  doc1: %s \n doc2: %s \n\n Atribuídos a %d usuário(s)",
             ongDoc.getObjectId("_id").toString(),
+            ongDoc.getString("situacaoCadastral"),
             ongDoc.getString("razaoSocial"),
             ongDoc.getString("nomeFantasia"),
             ongDoc.getString("cnpj"),
@@ -191,7 +210,6 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             enderecoDisplay,
             redesDisplay,
             ongDoc.getString("descricao"),
-            
             doc1,
             doc2,
             totalAtribuidos
@@ -211,7 +229,11 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
 
     }    
 
-
+         private void vincularAcoes() {
+                if (btnSalvarEdicao != null) btnSalvarEdicao.addActionListener(this::btnSalvarEdicaoActionPerformed);
+                // Não vinculamos Aprovar/Reprovar para desativar a função
+                if (brnClose != null) brnClose.addActionListener(evt -> this.dispose());
+        }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -229,12 +251,10 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         jPanel6 = new javax.swing.JPanel();
         btnSalvarEdicao = new javax.swing.JButton();
         jLabel13 = new javax.swing.JLabel();
-        jLabel14 = new javax.swing.JLabel();
-        jLabel15 = new javax.swing.JLabel();
         jLabel16 = new javax.swing.JLabel();
-        btnAprovarONG = new javax.swing.JButton();
-        btnReprovarONG = new javax.swing.JButton();
         brnClose = new javax.swing.JButton();
+        jLabel9 = new javax.swing.JLabel();
+        cbxSituacaoCadastral = new javax.swing.JComboBox<>();
         jPanel7 = new javax.swing.JPanel();
         jLabel17 = new javax.swing.JLabel();
         cbxOngs = new javax.swing.JComboBox<>();
@@ -253,15 +273,15 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 537, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(278, Short.MAX_VALUE))
+                .addComponent(jScrollPane7, javax.swing.GroupLayout.DEFAULT_SIZE, 537, Short.MAX_VALUE)
+                .addGap(278, 278, 278))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 529, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addComponent(jScrollPane7, javax.swing.GroupLayout.DEFAULT_SIZE, 529, Short.MAX_VALUE)
+                .addGap(18, 18, 18))
         );
 
         jScrollPane5.setViewportView(jPanel5);
@@ -275,25 +295,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
 
         jLabel13.setText("Salvar edição! -->");
 
-        jLabel14.setText("Aprovar ONG! -->");
-
-        jLabel15.setText("Reprovar ONG! -->");
-
         jLabel16.setText("Fechar! -->");
-
-        btnAprovarONG.setText("Aprovar ONG");
-        btnAprovarONG.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnAprovarONGActionPerformed(evt);
-            }
-        });
-
-        btnReprovarONG.setText("Reprovar ONG");
-        btnReprovarONG.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnReprovarONGActionPerformed(evt);
-            }
-        });
 
         brnClose.setText("Fechar");
         brnClose.addActionListener(new java.awt.event.ActionListener() {
@@ -302,45 +304,47 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             }
         });
 
+        jLabel9.setText("Situação cadastral:");
+
+        cbxSituacaoCadastral.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel14)
-                    .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel16, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(brnClose)
-                    .addComponent(btnReprovarONG)
-                    .addComponent(btnAprovarONG)
-                    .addComponent(btnSalvarEdicao))
-                .addContainerGap(192, Short.MAX_VALUE))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(jLabel16, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(brnClose))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(cbxSituacaoCadastral, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnSalvarEdicao)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel9)
+                    .addComponent(cbxSituacaoCadastral, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel13)
                     .addComponent(btnSalvarEdicao))
-                .addGap(27, 27, 27)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel14)
-                    .addComponent(btnAprovarONG))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel15)
-                    .addComponent(btnReprovarONG))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 151, Short.MAX_VALUE)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel16)
                     .addComponent(brnClose))
-                .addContainerGap(66, Short.MAX_VALUE))
+                .addGap(14, 14, 14))
         );
 
         jLabel17.setText("Pesquisar ONG:");
@@ -419,16 +423,66 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         this.dispose();
     }//GEN-LAST:event_brnCloseActionPerformed
 
-    private void btnReprovarONGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReprovarONGActionPerformed
-        JOptionPane.showMessageDialog(this, "Reprovar ONG - Lógica de status deve ser implementada no controller.", "Ação Pendente", JOptionPane.INFORMATION_MESSAGE);
-    }//GEN-LAST:event_btnReprovarONGActionPerformed
-
-    private void btnAprovarONGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAprovarONGActionPerformed
-        JOptionPane.showMessageDialog(this, "Aprovar ONG - Lógica de status deve ser implementada no controller.", "Ação Pendente", JOptionPane.INFORMATION_MESSAGE);
-    }//GEN-LAST:event_btnAprovarONGActionPerformed
-
     private void btnSalvarEdicaoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalvarEdicaoActionPerformed
+        // 1. Checagem de Seleção
+        if (ongSelecionada == null || ongIdSelecionada == null) {
+            JOptionPane.showMessageDialog(this, "Selecione uma ONG válida antes de salvar.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
+        // 2. COLETAR NOVO STATUS CADASTRAL DO COMBOBOX
+        String novoStatusCadastral = (String) cbxSituacaoCadastral.getSelectedItem();
+
+        if (novoStatusCadastral == null || novoStatusCadastral.startsWith("---")) {
+            JOptionPane.showMessageDialog(this, "Selecione um Status Cadastral válido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 3. Monta o Documento de Update (APENAS COM O CAMPO DE STATUS)
+        Document updates = new Document();
+        updates.append("situacaoCadastral", novoStatusCadastral); 
+
+        // Variável para armazenar o ID do usuário atribuído (o responsável)
+        ObjectId userIdParaPromover = null;
+
+        // Tenta obter o ID do usuário do campo 'assignedTo' (o primeiro da lista)
+        List<?> assignedToList = ongSelecionada.get("assignedTo", List.class);
+        if (assignedToList != null && !assignedToList.isEmpty() && assignedToList.get(0) instanceof ObjectId) {
+            userIdParaPromover = (ObjectId) assignedToList.get(0);
+        }
+
+        // 4. PERSISTÊNCIA NA COLEÇÃO 'ONGS'
+        boolean edicaoONGSucesso = controller.atualizarDadosONG(ongIdSelecionada, updates);
+
+        if (edicaoONGSucesso) {
+
+            // 5. LÓGICA CRÍTICA: PROMOÇÃO DE STATUS (Se for APROVADO)
+            if ("APROVADO".equalsIgnoreCase(novoStatusCadastral)) {
+
+                if (userIdParaPromover != null) {
+                    String userIdStr = userIdParaPromover.toString(); 
+
+                    // Reutiliza o método setStatus existente para mudar o perfil para "ONG"
+                    if (controller.setStatus(userIdStr, "ONG")) {
+                        JOptionPane.showMessageDialog(this, "Usuário responsável PROMOVIDO para status 'ONG'!", "Status Atualizado", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Alerta: ONG salva, mas FALHA ao promover status do usuário.", "Erro", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                     JOptionPane.showMessageDialog(this, "Alerta: ONG salva, mas ID de usuário em 'assignedTo' é inválido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+
+            // 6. Feedback final e sincronização
+            JOptionPane.showMessageDialog(this, "Status da ONG salvo com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            carregarOngsNoComboBox(); // Re-carrega o ComboBox principal
+             // Limpa o estado da tela
+            ongSelecionada = null; 
+
+        } else {
+            JOptionPane.showMessageDialog(this, "Falha ao salvar as edições da ONG.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnSalvarEdicaoActionPerformed
 
     /**
@@ -467,14 +521,11 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
     private javax.swing.JTextField TFTelefone;
     private javax.swing.JTextField TFTelefone1;
     private javax.swing.JButton brnClose;
-    private javax.swing.JButton btnAprovarONG;
-    private javax.swing.JButton btnReprovarONG;
     private javax.swing.JButton btnSalvarEdicao;
     private javax.swing.JComboBox<String> cbxOngs;
+    private javax.swing.JComboBox<String> cbxSituacaoCadastral;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel2;
@@ -484,6 +535,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;

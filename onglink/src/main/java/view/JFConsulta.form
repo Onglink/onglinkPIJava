@@ -101,7 +101,7 @@
           <SubComponents>
             <Component class="javax.swing.JLabel" name="jLabel1">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Pesquisar (C&#xf3;dUsu&#xe1;rio, Raz&#xe3;o Social, CNPJ):"/>
+                <Property name="text" type="java.lang.String" value="Pesquisar (C&#xf3;dUsu&#xe1;rio, Nome, CPF, Status):"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JTextField" name="JTFCampoPesquisaContas">
@@ -174,14 +174,14 @@
                   <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
-                              <Component id="jLabel2" min="-2" pref="300" max="-2" attributes="0"/>
-                              <EmptySpace min="-2" pref="60" max="-2" attributes="0"/>
+                          <Group type="102" attributes="0">
+                              <Component id="jLabel2" min="-2" pref="348" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
                               <Component id="JTFCampoPesquisaPublicacoes" max="32767" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="btnPesquisarPublicacoes" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="jScrollPane2" alignment="0" pref="1075" max="32767" attributes="0"/>
+                          <Component id="jScrollPane2" pref="1075" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -206,7 +206,7 @@
           <SubComponents>
             <Component class="javax.swing.JLabel" name="jLabel2">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Pesquisar (C&#xf3;d.Publica&#xe7;&#xe3;o, T&#xed;tulo, Descri&#xe7;&#xe3;o, C&#xf3;d.Usu&#xe1;rio,):"/>
+                <Property name="text" type="java.lang.String" value="Pesquisar (C&#xf3;d.Publica&#xe7;&#xe3;o, T&#xed;tulo, Descri&#xe7;&#xe3;o, C&#xf3;d.Usu&#xe1;rio):"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JTextField" name="JTFCampoPesquisaPublicacoes">
@@ -261,10 +261,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <EmptySpace min="0" pref="404" max="32767" attributes="0"/>
                   <Group type="103" rootIndex="1" groupAlignment="0" attributes="0">
-                      <Group type="102" alignment="0" attributes="0">
-                          <Component id="Ongs" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace min="0" pref="6" max="32767" attributes="0"/>
-                      </Group>
+                      <Component id="Ongs" alignment="0" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -281,10 +278,10 @@
                               <Group type="102" attributes="0">
                                   <Component id="jLabel3" min="-2" pref="300" max="-2" attributes="0"/>
                                   <EmptySpace min="-2" pref="56" max="-2" attributes="0"/>
-                                  <Component id="JTFCampoPesquisaOngs" pref="531" max="32767" attributes="0"/>
+                                  <Component id="JTFCampoPesquisaOngs" pref="570" max="32767" attributes="0"/>
                                   <EmptySpace type="unrelated" max="-2" attributes="0"/>
                                   <Component id="btnPesquisarOngs" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace min="-2" pref="102" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="63" max="-2" attributes="0"/>
                               </Group>
                               <Group type="102" attributes="0">
                                   <Component id="jScrollPane3" max="32767" attributes="0"/>
@@ -307,10 +304,9 @@
                           </Group>
                           <EmptySpace type="unrelated" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
-                              <Component id="jScrollPane3" pref="351" max="32767" attributes="0"/>
                               <Component id="jScrollPane4" max="32767" attributes="0"/>
+                              <Component id="jScrollPane3" pref="363" max="32767" attributes="0"/>
                           </Group>
-                          <EmptySpace max="-2" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -318,7 +314,7 @@
               <SubComponents>
                 <Component class="javax.swing.JLabel" name="jLabel3">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Pesquisar (C&#xf3;d.ONG, Raz&#xe3;o Social, CNPJ):"/>
+                    <Property name="text" type="java.lang.String" value="Pesquisar (C&#xf3;d.ONG, Raz&#xe3;o Social, CNPJ, etc...):"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JTextField" name="JTFCampoPesquisaOngs">

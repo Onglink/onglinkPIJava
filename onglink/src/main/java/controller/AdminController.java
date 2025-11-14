@@ -140,21 +140,21 @@ public class AdminController {
     
     
     public List<Document> getAssignedUsersDetails(Document ongDoc) {
-        if (ongDoc == null) {
-            return new ArrayList<>();
-        }
-
-        // 1. Extração da Lista de ObjectIds (Assumed structure)
-        // Garante que o campo assignedTo é lido como uma Lista de ObjectIds
-        List<ObjectId> userIds = ongDoc.getList("assignedTo", ObjectId.class);
-
-        if (userIds == null || userIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 2. Chama o método OTIMIZADO que busca todos os IDs em uma única consulta
-        return model.getUsersByIds(userIds); 
+    if (ongDoc == null) {
+        return new ArrayList<>();
     }
+
+    // 1. Extração da Lista de ObjectIds (Assumed structure)
+    // Garante que o campo assignedTo é lido como uma Lista de ObjectIds
+    List<ObjectId> userIds = ongDoc.getList("assignedTo", ObjectId.class);
+
+    if (userIds == null || userIds.isEmpty()) {
+        return new ArrayList<>();
+    }
+
+    // 2. Chama o método OTIMIZADO que busca todos os IDs em uma única consulta
+    return model.getUsersByIds(userIds); 
+}
     
 public List<Document> filtrarPublicacoes(String termoBusca) {
         final String termo = termoBusca.toLowerCase(); 
@@ -257,6 +257,11 @@ public List<Document> filtrarOngs(String termoBusca) {
     // Método para reprovar (apenas deleta)
     public boolean reprovarONG(String solicitacaoId) {
         return model.reprovarSolicitacao(solicitacaoId); // Renomeei para maior clareza
+    }
+    
+    public boolean atualizarDadosONG(String ongId, Document updates) {
+        // Assume que o Model possui o método atualizarDadosONG para a coleção 'ongs'
+        return model.atualizarDadosONG(ongId, updates); 
     }
     
 }

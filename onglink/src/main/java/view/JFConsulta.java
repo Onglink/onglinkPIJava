@@ -74,31 +74,9 @@ private final AdminController controller = new AdminController();
         setTitle("Consultas de Dados");
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
     }
-    
     // --- LÓGICA DE CARREGAMENTO DE DADOS NAS TABELAS ---
-
     // --- LÓGICA AUXILIAR DE CARREGAMENTO DE LISTA (APROVAÇÕES PENDENTES) ---
 
-    private void carregarListaAprovacoes(List<Document> lista) {
-        if (lista == null) {
-            lista = Collections.emptyList();
-        }
-        listModelAprovacoes = new DefaultListModel<>();  
-        mapAprovacoes.clear(); 
-
-        for (Document d : lista) {
-            String ongId = d.getObjectId("_id").toString();
-            String razaoSocial = d.getString("razaoSocial");
-            String cnpj = d.getString("cnpj");
-            
-            String chaveExibicao = razaoSocial + " | CNPJ: " + cnpj + " (ID: " + ongId.substring(0, 24) + ")";
-            
-            listModelAprovacoes.addElement(chaveExibicao);
-            mapAprovacoes.put(chaveExibicao, d);
-        }
-        
-        jListOngs.setModel(listModelAprovacoes); 
-    }
     
 // --- LÓGICA DE CARREGAMENTO E ROTEAMENTO (JTables) ---
 
@@ -127,7 +105,7 @@ private final AdminController controller = new AdminController();
 
         if (tipo.equals("contas")) {
             // --- CONFIGURAÇÃO DA TABELA DE CONTAS ---
-            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CNPJ", "Email", "Descrição"}; 
+            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email"}; 
             model = new DefaultTableModel(colunas, 0);
 
             for (Document doc : dados) {
@@ -135,9 +113,8 @@ private final AdminController controller = new AdminController();
                     doc.getObjectId("_id").toString().substring(0, 24),
                     doc.getString("nome"),          
                     doc.getString("status"),        
-                    doc.getString("cnpj"),          
-                    doc.getString("email"),         
-                    doc.getString("descricao")      
+                    doc.getString("cpf"),          
+                    doc.getString("email")      
                 });
             }
         } else { // tipo.equals("publicacoes")
@@ -311,7 +288,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             String bairro = endereco.getString("bairro") != null ? endereco.getString("bairro") : "";
             String cep = endereco.getString("cep") != null ? endereco.getString("cep") : "";
             String cidade = endereco.getString("cidade") != null ? endereco.getString("cidade") : "";
-            String estado = endereco.getString("estado") != null ? ongSelecionada.getString("estado") : ""; // Atenção: deve ser ongSelecionada.getString("estado") se for um campo simples
+            String estado = endereco.getString("estado") != null ? endereco.getString("estado") : ""; // Atenção: deve ser ongSelecionada.getString("estado") se for um campo simples
             
             enderecoDisplay = String.format("Logradouro: %s \n Numero: %s \n Complemento: %s \n Bairro: %s \n CEP: %s \n Cidade: %s \n Estado: %s \n", rua, numeroEnd, complemento, bairro, cep, cidade, estado).trim();
         }
@@ -328,16 +305,58 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             redesDisplay = String.format("Instagram: %s \n Facebook: %s \n Linkedin: %s \n Site: %s \n", instagram, facebook, linkedin, site );
         }
 
+        List<String> documentosDisplay = ongSelecionada.getList("arquivosLegais", String.class);
+
+        String doc1 = "Nenhum link de documento encontrado";
+        String doc2 = "Nenhum link de documento encontrado"; 
+
+        // 2. Verifica se a lista não está vazia
+        if (documentosDisplay != null && !documentosDisplay.isEmpty()) {
+            // 3. Extrai o primeiro link do array (índice 0)
+            doc1 = documentosDisplay.get(0);
+            doc2 = documentosDisplay.get(1);
+            
+          
+        }
+        
+        
+        
         List<?> assignedToList = ongSelecionada.get("assignedTo", List.class);
         int totalAtribuidos = (assignedToList != null) ? assignedToList.size() : 0;
+
         
-        // Montagem do Texto de Detalhes
-        String detalhes = String.format(
-            "--- DETALHES DA ONG ---\n" +
-            "ID: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
+        List<Document> assignedUsers = controller.getAssignedUsersDetails(ongSelecionada);
+        StringBuilder assignedUsersDisplay = new StringBuilder();
+        assignedUsersDisplay.append("\n--------------------------------------------\n");
+        assignedUsersDisplay.append(" USUÁRIOS ATRIBUÍDOS \n");
+        assignedUsersDisplay.append("--------------------------------------------\n");
+
+        if (assignedUsers.isEmpty()) {
+            assignedUsersDisplay.append("Nenhum usuário atribuído a esta ONG.");
+        } else {
+            for (Document user : assignedUsers) {
+                String userId = user.getObjectId("_id").toString();
+                String nome = user.getString("nome") != null ? user.getString("nome") : "N/A";
+                String email = user.getString("email") != null ? user.getString("email") : "N/A";
+
+                assignedUsersDisplay.append("ID: ").append(userId).append("\n");
+                assignedUsersDisplay.append("Nome: ").append(nome).append("\n");
+                assignedUsersDisplay.append("Email: ").append(email).append("\n");
+
+                assignedUsersDisplay.append("--- \n");
+            }
+        }
+        
+        
+        
+
+        String detalhesComplementares = String.format(
+            "--- INFORMAÇÕES DE REGISTRO ---\n" +
+            "ID da ONG: %s\n Situação Cadastral: %s \n Razão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
             "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
-            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s\nAtribuídos: %d usuário(s)",
+            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  doc1: %s \n doc2: %s \n\n Atribuídos a %d usuário(s)",
             ongSelecionada.getObjectId("_id").toString(),
+            ongSelecionada.getString("situacaoCadastral"),
             ongSelecionada.getString("razaoSocial"),
             ongSelecionada.getString("nomeFantasia"),
             ongSelecionada.getString("cnpj"),
@@ -349,12 +368,25 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             enderecoDisplay,
             redesDisplay,
             ongSelecionada.getString("descricao"),
+            
+            doc1,
+            doc2,
             totalAtribuidos
         );
-        TADetalhesOngs.setText(detalhes);
         
-        // 3. Ocultamos o botão Gerenciar, conforme seu pedido
-    }
+        String textoFinal = detalhesComplementares + assignedUsersDisplay.toString();
+        
+        if (TADetalhesOngs != null) {
+            // Limpa e anexa os detalhes completos no JTextArea principal
+            TADetalhesOngs.setText("");
+            TADetalhesOngs.append(textoFinal);
+            TADetalhesOngs.setCaretPosition(0); 
+        }
+        
+        
+        
+
+    }    
 }
     
     public AdminController getController() {
@@ -363,38 +395,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
     
     
     
-    public void atualizarListaAprovacoes() {
-    // 🚨 ATENÇÃO: Se você usa abas, garanta que este método chame a lógica
-    // de recarregamento da JList da ABA DE APROVAÇÕES.
-    
-    // Assumindo que você tem um método para carregar a lista de aprovações
-    // (Pode ser que este método esteja em JFAprovacao.java se você a estiver usando)
-    
-    // Se a lógica de aprovação está em JFConsulta:
-    // List<Document> aprovacoes = controller.getAprovacoes();
-    // carregarListaAprovacoes(aprovacoes); // Este método precisa existir
-    
-    // Se a lógica de aprovação está em outra tela (JFAprovacao),
-    // você precisa garantir que essa tela seja a que está aberta e recarregue.
-    
-    // *** A SOLUÇÃO MAIS SIMPLES É CRIAR A LÓGICA AQUI SE VOCÊ ESTIVER USANDO A ABA 'ONGs' ***
-    // Se você estiver usando a JList na aba ONGs para APROVAÇÃO, insira aqui o código:
-    // carregarListaOngs(controller.getAprovacoes()); 
-    
-    // Se você estiver usando a aba de consulta para ver ONGs REGISTRADAS,
-    // e o JFGerenciarONG for chamado de JFAprovacao, você terá que adaptar.
-    
-    // Como a tela pai é JFConsulta, vou assumir que você tem um método
-    // para carregar a lista de ONGs (mesmo que seja a de aprovação)
-    
-    logger.info("Tentativa de recarregar a lista de aprovações.");
-    
-    // *** Se você estiver usando o código de APROVAÇÃO na ABA JFConsulta ***
-    // Se 'carregarListaOngs' foi adaptado para APROVAÇÕES:
-    // List<Document> listaAprovacoes = controller.getAprovacoes();
-    // carregarListaOngs(listaAprovacoes); // O método de carregamento precisa ser público ou acessível
-}
-
+  
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -442,7 +443,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             }
         });
 
-        jLabel1.setText("Pesquisar (CódUsuário, Razão Social, CNPJ):");
+        jLabel1.setText("Pesquisar (CódUsuário, Nome, CPF, Status):");
 
         btnPesquisarContas.setText("Pesquisar");
         btnPesquisarContas.addActionListener(new java.awt.event.ActionListener() {
@@ -515,7 +516,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
 
         tabbedPane.addTab("Contas", Contas);
 
-        jLabel2.setText("Pesquisar (Cód.Publicação, Título, Descrição, Cód.Usuário,):");
+        jLabel2.setText("Pesquisar (Cód.Publicação, Título, Descrição, Cód.Usuário):");
 
         btnPesquisarPublicacoes.setText("Pesquisar");
         btnPesquisarPublicacoes.addActionListener(new java.awt.event.ActionListener() {
@@ -545,8 +546,8 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                 .addContainerGap()
                 .addGroup(PublicacoesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(PublicacoesLayout.createSequentialGroup()
-                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(60, 60, 60)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 348, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(JTFCampoPesquisaPublicacoes)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnPesquisarPublicacoes))
@@ -568,7 +569,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
 
         tabbedPane.addTab("Publicações", Publicacoes);
 
-        jLabel3.setText("Pesquisar (Cód.ONG, Razão Social, CNPJ):");
+        jLabel3.setText("Pesquisar (Cód.ONG, Razão Social, CNPJ, etc...):");
 
         btnPesquisarOngs.setText("Pesquisar");
         btnPesquisarOngs.addActionListener(new java.awt.event.ActionListener() {
@@ -603,10 +604,10 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                     .addGroup(OngsLayout.createSequentialGroup()
                         .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(56, 56, 56)
-                        .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.DEFAULT_SIZE, 531, Short.MAX_VALUE)
+                        .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.DEFAULT_SIZE, 570, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnPesquisarOngs)
-                        .addGap(102, 102, 102))
+                        .addGap(63, 63, 63))
                     .addGroup(OngsLayout.createSequentialGroup()
                         .addComponent(jScrollPane3)
                         .addGap(18, 18, 18)
@@ -623,9 +624,8 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                     .addComponent(btnPesquisarOngs))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 351, Short.MAX_VALUE)
-                    .addComponent(jScrollPane4))
-                .addContainerGap())
+                    .addComponent(jScrollPane4)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 363, Short.MAX_VALUE)))
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -640,9 +640,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 404, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addComponent(Ongs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 6, Short.MAX_VALUE)))
+                .addComponent(Ongs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("ONGs", jPanel1);
