@@ -42,11 +42,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         
     }
     
-    // --- MÉTODOS DE DADOS E ESTADO (Omitidos, mas funcionais) ---
-    
-    
 
-    
      
     
     // --- LÓGICA DE CARREGAMENTO E MUDANÇA DE ESTADO ---
@@ -463,7 +459,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
                     String userIdStr = userIdParaPromover.toString(); 
 
                     // Reutiliza o método setStatus existente para mudar o perfil para "ONG"
-                    if (controller.setStatus(userIdStr, "ONG")) {
+                    if (controller.setStatus(userIdStr, "ong")) {
                         JOptionPane.showMessageDialog(this, "Usuário responsável PROMOVIDO para status 'ONG'!", "Status Atualizado", JOptionPane.INFORMATION_MESSAGE);
                     } else {
                         JOptionPane.showMessageDialog(this, "Alerta: ONG salva, mas FALHA ao promover status do usuário.", "Erro", JOptionPane.ERROR_MESSAGE);

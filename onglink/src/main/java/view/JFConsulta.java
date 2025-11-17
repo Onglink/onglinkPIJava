@@ -25,9 +25,11 @@ public class JFConsulta extends javax.swing.JInternalFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JFConsulta.class.getName());
 
-private final AdminController controller = new AdminController();
+    private final AdminController controller = new AdminController();
     
-
+    // Mapeia o ID do Usuário (String) para a Razão Social da ONG (String)
+    private Map<String, String> userOngMap = new HashMap<>();
+    
     // Variáveis de Estado
     private String contaSelecionadaId;
     private String statusAtualSelecionado;
@@ -56,6 +58,7 @@ private final AdminController controller = new AdminController();
         
         try {
             // Inicializa e carrega as JTables
+            mapearUsuariosParaOngs(); // 🚨 NOVO: Mapeia as atribuições antes de carregar a tabela
             carregarDadosNaTabela("contas", JTContas);
             carregarDadosNaTabela("publicacoes", JTPublicacoes);
             
@@ -105,16 +108,27 @@ private final AdminController controller = new AdminController();
 
         if (tipo.equals("contas")) {
             // --- CONFIGURAÇÃO DA TABELA DE CONTAS ---
-            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email"}; 
+            
+            
+            colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email", "ONG Atrelada"}; 
             model = new DefaultTableModel(colunas, 0);
 
             for (Document doc : dados) {
+                // Obtém o ID do usuário (ObjectId) e converte para String
+                String userId = doc.getObjectId("_id").toString();
+
+                // 1. Consulta o novo mapa: Busca a Razão Social da ONG atrelada
+                // (Assume que 'userOngMap' está acessível e preenchido)
+                String ongAtrelada = userOngMap.getOrDefault(userId, "Nenhuma"); 
+
+                // 2. Montagem da Linha (com a nova coluna)
                 model.addRow(new Object[]{
-                    doc.getObjectId("_id").toString().substring(0, 24),
-                    doc.getString("nome"),          
-                    doc.getString("status"),        
-                    doc.getString("cpf"),          
-                    doc.getString("email")      
+                    userId.substring(0, 24), // ID Truncado
+                    doc.getString("nome"),
+                    doc.getString("status"),
+                    doc.getString("cpf"),
+                    doc.getString("email"),
+                    ongAtrelada   
                 });
             }
         } else { // tipo.equals("publicacoes")
@@ -153,34 +167,48 @@ private final AdminController controller = new AdminController();
     
     
     private void carregarContasNaTabela (List<Document> dados){
-        
+
         if (dados == null || dados.isEmpty()){
             JTContas.setModel(new DefaultTableModel());
             return;
         }
-        
-        String[] colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CPF", "Email"}; 
+
+        // Colunas (incluindo a Razão Social)
+        String[] colunas = new String[]{"Cód. Usuário (ID)", "Nome", "Status", "CNPJ", "Email", "ONG Atrelada"}; 
         DefaultTableModel model = new DefaultTableModel(colunas, 0);
-        
-        for (Document doc : dados){
-            String contaId = doc.get("_id").toString();
-            String contaNome = doc.get("nome").toString();
-            String contaStatus = doc.get("status").toString();
-            String contaCPF = doc.get("cpf").toString();
-            String contaEmail = doc.get("email").toString();
-            
-            
+
+        for (Document userDoc : dados){
+            String userId = userDoc.getObjectId("_id").toString();
+            String ongAtrelada = "Nenhuma";
+
+            // 1. Tenta obter o ID da ONG (campo 'assignedTo' no documento do usuário)
+            // O método get() retorna Object, que pode ser ObjectId ou null.
+            Object assignedToId = userDoc.get("assignedTo"); 
+
+            if (assignedToId instanceof ObjectId) {
+                ObjectId ongId = (ObjectId) assignedToId;
+
+                // 2. Busca a ONG diretamente pelo ID (método getOngById no AdminController)
+                Document ongDoc = controller.getOngById(ongId); 
+
+                if (ongDoc != null) {
+                    // 3. Extrai a Razão Social para exibição (assumindo campo 'razaoSocial' na coleção 'ongs')
+                    ongAtrelada = ongDoc.getString("razaoSocial");
+                }
+            }
+
+            // 4. Montagem da Linha
             model.addRow(new Object[]{
-                contaId.substring(0, 24), 
-                contaNome,
-                contaStatus,
-                contaCPF,
-                contaEmail,
+                userId.substring(0, 24), // ID Truncado 
+                userDoc.getString("nome"),
+                userDoc.getString("status"),
+                userDoc.getString("cnpj"),
+                userDoc.getString("email"),
+                ongAtrelada // Valor final encontrado
             });
         }
-        
+
         JTContas.setModel(model);
-        
     }
     
 private void carregarPublicacoesNaTabela(List<Document> dados) {
@@ -215,8 +243,8 @@ private void carregarPublicacoesNaTabela(List<Document> dados) {
         // Montagem da linha (lendo todos os campos minúsculos)
         model.addRow(new Object[]{
             pubId.substring(0, 24),      
-            doc.getString("titulo"),            // Lendo 'titulo'
-            doc.getString("descricao"),         // Lendo 'descricao' (o antigo 'Texto')
+            doc.getString("titulo"),            
+            doc.getString("descricao"),         
             criadorId.substring(0, 24),  
             dataPub,                            
             numImagens + " Arquivos"     
@@ -288,7 +316,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             String bairro = endereco.getString("bairro") != null ? endereco.getString("bairro") : "";
             String cep = endereco.getString("cep") != null ? endereco.getString("cep") : "";
             String cidade = endereco.getString("cidade") != null ? endereco.getString("cidade") : "";
-            String estado = endereco.getString("estado") != null ? endereco.getString("estado") : ""; // Atenção: deve ser ongSelecionada.getString("estado") se for um campo simples
+            String estado = endereco.getString("estado") != null ? endereco.getString("estado") : ""; 
             
             enderecoDisplay = String.format("Logradouro: %s \n Numero: %s \n Complemento: %s \n Bairro: %s \n CEP: %s \n Cidade: %s \n Estado: %s \n", rua, numeroEnd, complemento, bairro, cep, cidade, estado).trim();
         }
@@ -393,7 +421,34 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
      return this.controller;
     }
     
-    
+   /**
+    * Mapeia qual Razão Social de ONG está atrelada a cada ID de Usuário.
+    */
+    private void mapearUsuariosParaOngs() {
+       userOngMap.clear();
+
+       // 1. Obtém todas as ONGs registradas
+       List<Document> todasOngs = controller.getOngs(); 
+
+       for (Document ong : todasOngs) {
+           String razaoSocial = ong.getString("razaoSocial");
+
+           // 2. Extrai a lista de IDs atribuídos
+           List<?> assignedToList = ong.get("assignedTo", List.class);
+
+           if (assignedToList != null && !assignedToList.isEmpty()) {
+               Object firstAssigned = assignedToList.get(0);
+
+               if (firstAssigned instanceof ObjectId) {
+                   String userIdStr = ((ObjectId) firstAssigned).toString();
+
+                   // 3. Mapeia: ID do Usuário -> Razão Social da ONG
+                   userOngMap.put(userIdStr, razaoSocial);
+               }
+               // OBS: Este código só mapeia o PRIMEIRO usuário atribuído (índice 0).
+           }
+       }
+    } 
     
   
     /**
@@ -470,7 +525,12 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
         });
         jScrollPane1.setViewportView(JTContas);
 
-        cbxNovoPerfil.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ADMIN", "ONG", "USER" }));
+        cbxNovoPerfil.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "admin", "ong", "user" }));
+        cbxNovoPerfil.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbxNovoPerfilActionPerformed(evt);
+            }
+        });
 
         btnSalvarPerfil.setText("Mudar Perfil");
         btnSalvarPerfil.addActionListener(new java.awt.event.ActionListener() {
@@ -492,7 +552,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                         .addComponent(JTFCampoPesquisaContas, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnPesquisarContas)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 283, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 284, Short.MAX_VALUE)
                         .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnSalvarPerfil))
@@ -742,7 +802,7 @@ if (contaSelecionadaId == null) return;
     final String novoPerfil = cbxNovoPerfil.getSelectedItem().toString();
     
     
-    boolean sucesso = controller.setStatus(contaSelecionadaId, novoPerfil); // Chamada ideal
+    boolean sucesso = controller.setStatus(contaSelecionadaId, novoPerfil); 
 
 
     if (sucesso) {
@@ -805,6 +865,10 @@ if (contaSelecionadaId == null) return;
 
     // Nota: O método auxiliar exibirDetalhesOng(evt) deve existir em sua classe.
     }//GEN-LAST:event_jListOngsValueChanged
+
+    private void cbxNovoPerfilActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxNovoPerfilActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cbxNovoPerfilActionPerformed
 
     /**
      * @param args the command line arguments

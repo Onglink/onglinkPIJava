@@ -141,6 +141,15 @@ public class SolicitacaoModel {
     return users;
 }
     
+    
+    public Document getOngById(ObjectId ongId) {
+    if (ongId == null) {
+        return null;
+    }
+    // Assume que ongsCollection está declarada e é usada aqui:
+    return ongsCollection.find(eq("_id", ongId)).first(); 
+}
+    
     /**
      * Atualiza o campo 'status' de um usuário no banco (ADMIN, USER, ONG).
      */

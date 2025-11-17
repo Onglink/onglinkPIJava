@@ -74,7 +74,7 @@ public class AdminController {
      * Lógica de alternância (opcional, mantida para compatibilidade).
      */
     public boolean alternarStatus(String usuarioId, String statusAtual) {
-        String novoStatus = statusAtual.equalsIgnoreCase("ADMIN") ? "USER" : "ADMIN"; 
+        String novoStatus = statusAtual.equalsIgnoreCase("admin") ? "user" : "admin"; 
         // CORREÇÃO: Chamando o método renomeado no Model
         return model.atualizarStatusUsuario(usuarioId, novoStatus); 
     }
@@ -98,6 +98,15 @@ public class AdminController {
     */
     public Document getUsuarioById(ObjectId userId) {
        return model.getUsuarioById(userId);
+    }
+    
+    
+    /**
+ * Busca uma ONG pelo seu ObjectId, acessando o método do Model.
+ */
+    public Document getOngById(ObjectId ongId) {
+        // Assume que o Model tem o método getOngById implementado
+        return model.getOngById(ongId);
     }
     
     // --- Reprovação ---

@@ -16,16 +16,16 @@ public class AuthModel {
         
         // Criando usuários de teste para os 3 perfis se a coleção estiver vazia
         if (usuariosCollection.countDocuments() == 0) {
-            System.out.println("Criando usuários de teste (ADMIN, ONG, USER)...");
+            System.out.println("Criando usuários de teste (admin, ong, user)...");
             
             // ADMIN (Pode logar no sistema)
-            usuariosCollection.insertOne(new Document("email", "admin@admin.com").append("senha", "12345").append("status", "ADMIN"));
+            usuariosCollection.insertOne(new Document("email", "admin@admin.com").append("senha", "12345").append("status", "admin"));
             
             // ONG (Não pode logar no sistema)
-            usuariosCollection.insertOne(new Document("email", "ong_teste@teste.com").append("senha", "ong123").append("status", "ONG"));
+            usuariosCollection.insertOne(new Document("email", "ong_teste@teste.com").append("senha", "ong123").append("status", "ong"));
             
             // USER (Não pode logar no sistema)
-            usuariosCollection.insertOne(new Document("email", "user_teste@teste.com").append("senha", "user123").append("status", "USER"));
+            usuariosCollection.insertOne(new Document("email", "user_teste@teste.com").append("senha", "user123").append("status", "user"));
         }
     }
 
@@ -45,7 +45,7 @@ public class AuthModel {
         Document userDoc = usuariosCollection.find(eq("email", email)).first();
         if (userDoc != null) {
             String status = userDoc.getString("status"); // Lendo campo 'status' minúsculo
-            return "ADMIN".equalsIgnoreCase(status); 
+            return "admin".equalsIgnoreCase(status); 
         }
         return false;
     }
