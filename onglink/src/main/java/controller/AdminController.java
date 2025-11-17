@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import model.SolicitacaoModel;
 import org.bson.Document;
 import org.bson.types.ObjectId;
-
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -168,30 +169,54 @@ public class AdminController {
 public List<Document> filtrarPublicacoes(String termoBusca) {
         final String termo = termoBusca.toLowerCase(); 
         
+        // ==========================================================
+        // 1. PRÉ-FILTRO: CRIA MAPA DE IDs DE ONGS QUE CORRESPONDEM AO TERMO
+        // ==========================================================
+        Map<ObjectId, String> ongsEncontradasMap = new HashMap<>();
+        
+        List<Document> todasOngs = model.carregarOngs(); 
+        
+        for (Document ong : todasOngs) {
+            String razaoSocial = ong.getString("razaoSocial");
+            String nomeFantasia = ong.getString("nomeFantasia");
+            
+            if (razaoSocial != null && razaoSocial.toLowerCase().contains(termo) ||
+                nomeFantasia != null && nomeFantasia.toLowerCase().contains(termo)) {
+                
+                // Adiciona o ObjectId da ONG ao mapa, que será a chave para o lookup na publicação
+                ongsEncontradasMap.put(ong.getObjectId("_id"), razaoSocial);
+            }
+        }
+        
+        // 2. FILTRO PRINCIPAL (NA COLEÇÃO DE PUBLICAÇÕES)
+        
         return model.carregarPublicacoes().stream()
             .filter(doc -> {
                 
-                // --- 1. Filtro por Título e Descrição (Minúsculo) ---
+                // --- A. Busca Direta por Título e Descrição (Minúsculo - campos da publicação) ---
                 if (doc.getString("titulo") != null && doc.getString("titulo").toLowerCase().contains(termo)) {
                     return true;
                 }
-                // O campo 'Texto' no seu código Java corresponde a 'descricao' no seu MongoDB
                 if (doc.getString("descricao") != null && doc.getString("descricao").toLowerCase().contains(termo)) {
                     return true;
                 }
                 
-                // --- 2. Filtro por IDs (ObjectIds) ---
+                // --- B. Busca por Razão Social (Usando IDs Mapeados) ---
+                // Verifica se a publicação tem o campo 'criadoPor' e se o ID está no nosso mapa.
+                Object criadoPor = doc.get("criadoPor"); 
                 
-                // Filtro pelo ID da Publicação (_id)
-                if (doc.getObjectId("_id") != null && doc.getObjectId("_id").toString().toLowerCase().contains(termo)) {
-                    return true;
-                }
-                
-                // Filtro pelo ID do Criador (criadoPor)
-                if (doc.get("criadoPor") instanceof ObjectId) {
-                    if (doc.getObjectId("criadoPor").toString().toLowerCase().contains(termo)) {
+                if (criadoPor instanceof ObjectId) {
+                    ObjectId criadorId = (ObjectId) criadoPor;
+                    
+                    // Se o ID do criador estiver no mapa, a Razão Social corresponde ao termo.
+                    if (ongsEncontradasMap.containsKey(criadorId)) {
                         return true;
                     }
+                }
+                
+                // --- C. Filtro por ID da Publicação (Fallback) ---
+                if (doc.getObjectId("_id") != null && doc.getObjectId("_id").toString().toLowerCase().contains(termo)) {
+                    return true;
                 }
                 
                 return false;

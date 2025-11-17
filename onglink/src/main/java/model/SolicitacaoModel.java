@@ -183,7 +183,7 @@ public class SolicitacaoModel {
         }
 
         // 2. Localiza o ID do Usuário e busca o Documento do usuário
-        ObjectId userId = solicitacaoDoc.getObjectId("usuarioId"); // *** PRESSUPOSTO: campo existe! ***
+        ObjectId userId = solicitacaoDoc.getObjectId("usuarioId"); 
         Document userDoc = getUsuarioById(userId); // Reutiliza o método getUsuarioById
         
         if (userDoc == null) {
@@ -219,7 +219,7 @@ public class SolicitacaoModel {
         // 5. CRÍTICO: ATUALIZA O STATUS DO USUÁRIO para "ONG"
         usuariosCollection.updateOne(
             eq("_id", userId),
-            Updates.set("status", "ONG")
+            Updates.set("status", "ong")
         );
 
         // 6. Remove a solicitação original da fila

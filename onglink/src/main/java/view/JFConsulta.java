@@ -211,48 +211,67 @@ public class JFConsulta extends javax.swing.JInternalFrame {
         JTContas.setModel(model);
     }
     
-private void carregarPublicacoesNaTabela(List<Document> dados) {
-    if (dados == null || dados.isEmpty()) {
-        JTPublicacoes.setModel(new DefaultTableModel()); 
-        return;
-    }
-    
-    // Novas Colunas (Título, Descrição, Criado Por, Data)
-    String[] colunas = new String[]{"Cód. Publicação (ID)", "Título", "Descrição", "Criado Por", "Data", "Imagens"}; 
-    DefaultTableModel model = new DefaultTableModel(colunas, 0);
+    private void carregarPublicacoesNaTabela(List<Document> dados) {
+        if (dados == null || dados.isEmpty()) {
+                JTPublicacoes.setModel(new DefaultTableModel());  
+                return;
+            }
 
-    for (Document doc : dados) {
-        // --- CÓDIGOS CORRIGIDOS PARA O SEU NOVO SCHEMA ---
-        String pubId = doc.getObjectId("_id").toString(); 
-        
-        // CORRIGIDO: Lendo 'criadoPor' (Object Id)
-        String criadorId = doc.get("criadoPor") instanceof ObjectId 
-                           ? doc.getObjectId("criadoPor").toString() 
-                           : "N/A";
-                           
-        // CORRIGIDO: Lendo 'createdAt'
-        String dataPub = "N/A";
-        if (doc.get("createdAt") instanceof java.util.Date) {
-            dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("createdAt"));
-        }
-        
-        // Contagem de Imagens (campo 'imagem' minúsculo)
-        List<?> imagens = doc.get("imagem", List.class); 
-        String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
+            // ========================================================
+            // 1. CRIAÇÃO DO MAPA DE LOOKUP LOCAL (ID da ONG -> Razão Social)
+            // ========================================================
+            Map<String, String> razaoSocialLookupMap = new HashMap<>();
 
-        // Montagem da linha (lendo todos os campos minúsculos)
-        model.addRow(new Object[]{
-            pubId.substring(0, 24),      
-            doc.getString("titulo"),            
-            doc.getString("descricao"),         
-            criadorId.substring(0, 24),  
-            dataPub,                            
-            numImagens + " Arquivos"     
-        });
+            List<Document> todasOngs = controller.getOngs();
+            for (Document ong : todasOngs) {
+                String ongIdStr = ong.getObjectId("_id").toString();
+                String razaoSocial = ong.getString("razaoSocial");
+                if (razaoSocial != null) {
+                    razaoSocialLookupMap.put(ongIdStr, razaoSocial);
+                }
+            }
+            // ========================================================
+
+            // 2. Definição das Colunas
+            String[] colunas = new String[]{"Cód. Publicação (ID)","Razão Social", "Título", "Descrição", "Data", "Imagens"}; 
+            DefaultTableModel model = new DefaultTableModel(colunas, 0);
+
+            // 3. Preenchimento da Tabela
+            for (Document doc : dados) {
+                String pubId = doc.getObjectId("_id").toString();
+
+                // Extrai o ID do Criador (ObjectId)
+                Object criadorObj = doc.get("criadoPor");
+                String razaoSocialAtrelada = "N/A";
+
+                if (criadorObj instanceof ObjectId) {
+                    String criadorIdStr = ((ObjectId) criadorObj).toString();
+
+                    // EXECUTA O LOOKUP NO MAPA LOCAL
+                    razaoSocialAtrelada = razaoSocialLookupMap.getOrDefault(criadorIdStr, "ONG Desconhecida");
+                }
+
+                String dataPub = "N/A";
+                if (doc.get("createdAt") instanceof java.util.Date) {
+                    dataPub = new java.text.SimpleDateFormat("dd/MM/yyyy").format(doc.getDate("createdAt"));
+                }
+
+                List<?> imagens = doc.get("imagem", List.class);
+                String numImagens = imagens != null ? String.valueOf(imagens.size()) : "0";
+
+                // Montagem da linha
+                model.addRow(new Object[]{
+                    pubId.substring(0, 24),
+                    razaoSocialAtrelada,
+                    doc.getString("titulo"),
+                    doc.getString("descricao"),
+                    dataPub,
+                    numImagens + " Arquivos"
+                });
+            }
+
+            JTPublicacoes.setModel(model);
     }
-    
-    JTPublicacoes.setModel(model);
-}
     
 
 
