@@ -484,6 +484,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
         jListOngs = new javax.swing.JList<>();
         jScrollPane4 = new javax.swing.JScrollPane();
         TADetalhesOngs = new javax.swing.JTextArea();
+        btnGerarRelatorio = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -570,7 +571,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                     .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnSalvarPerfil))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 370, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -623,7 +624,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                     .addComponent(JTFCampoPesquisaPublicacoes, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnPesquisarPublicacoes))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 370, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -654,6 +655,13 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
         TADetalhesOngs.setRows(5);
         jScrollPane4.setViewportView(TADetalhesOngs);
 
+        btnGerarRelatorio.setText("Gerar Relatório");
+        btnGerarRelatorio.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGerarRelatorioActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout OngsLayout = new javax.swing.GroupLayout(Ongs);
         Ongs.setLayout(OngsLayout);
         OngsLayout.setHorizontalGroup(
@@ -662,17 +670,18 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                 .addContainerGap()
                 .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(OngsLayout.createSequentialGroup()
-                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(56, 56, 56)
-                        .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.DEFAULT_SIZE, 570, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnPesquisarOngs)
-                        .addGap(63, 63, 63))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnGerarRelatorio))
                     .addGroup(OngsLayout.createSequentialGroup()
-                        .addComponent(jScrollPane3)
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 557, Short.MAX_VALUE)
                         .addGap(18, 18, 18)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap())))
+                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
         );
         OngsLayout.setVerticalGroup(
             OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -681,11 +690,12 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                 .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnPesquisarOngs))
+                    .addComponent(btnPesquisarOngs)
+                    .addComponent(btnGerarRelatorio))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane4)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 363, Short.MAX_VALUE)))
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 376, Short.MAX_VALUE)))
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -698,7 +708,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 404, Short.MAX_VALUE)
+            .addGap(0, 417, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addComponent(Ongs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -870,6 +880,45 @@ if (contaSelecionadaId == null) return;
         // TODO add your handling code here:
     }//GEN-LAST:event_cbxNovoPerfilActionPerformed
 
+    private void btnGerarRelatorioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGerarRelatorioActionPerformed
+        // TODO add your handling code here:
+        // 1. Obtém a lista completa de ONGs a partir do Controller
+        List<Document> listaOngs = controller.getOngs(); 
+
+        if (listaOngs.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Não há ONGs cadastradas para gerar o relatório.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 2. Configuração e Abertura do Diálogo para Salvar o Arquivo
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Salvar Relatório de ONGs");
+
+        // Define o nome de arquivo padrão
+        fileChooser.setSelectedFile(new java.io.File("Relatorio_ONGs_" + java.time.LocalDate.now() + ".pdf"));
+
+        int userSelection = fileChooser.showSaveDialog(this);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            java.io.File fileToSave = fileChooser.getSelectedFile();
+            String filePath = fileToSave.getAbsolutePath();
+
+            // Garante a extensão .pdf se o usuário não a forneceu
+            if (!filePath.toLowerCase().endsWith(".pdf")) {
+                filePath += ".pdf";
+            }
+
+            // 3. Chama a lógica de geração de PDF (Instancia o Controller de Relatório)
+            controller.RelatorioOngs relatorio = new controller.RelatorioOngs();
+
+            if (relatorio.gerar(listaOngs, filePath)) {
+                JOptionPane.showMessageDialog(this, "Relatório gerado com sucesso em: " + filePath, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Erro ao gerar o arquivo PDF. Verifique as permissões de escrita.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_btnGerarRelatorioActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -905,6 +954,7 @@ if (contaSelecionadaId == null) return;
     private javax.swing.JPanel Ongs;
     private javax.swing.JPanel Publicacoes;
     private javax.swing.JTextArea TADetalhesOngs;
+    private javax.swing.JButton btnGerarRelatorio;
     private javax.swing.JButton btnPesquisarContas;
     private javax.swing.JButton btnPesquisarOngs;
     private javax.swing.JButton btnPesquisarPublicacoes;
