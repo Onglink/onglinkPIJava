@@ -354,14 +354,14 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
 
         List<String> documentosDisplay = ongSelecionada.getList("arquivosLegais", String.class);
 
-        String doc1 = "Nenhum link de documento encontrado";
-        String doc2 = "Nenhum link de documento encontrado"; 
+        String ataDeCriacao = "Nenhum link de documento encontrado";
+        String estatutoSocial = "Nenhum link de documento encontrado"; 
 
         // 2. Verifica se a lista não está vazia
         if (documentosDisplay != null && !documentosDisplay.isEmpty()) {
             // 3. Extrai o primeiro link do array (índice 0)
-            doc1 = documentosDisplay.get(0);
-            doc2 = documentosDisplay.get(1);
+            ataDeCriacao = documentosDisplay.get(0);
+            estatutoSocial = documentosDisplay.get(1);
             
           
         }
@@ -401,7 +401,7 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             "--- INFORMAÇÕES DE REGISTRO ---\n" +
             "ID da ONG: %s\n Situação Cadastral: %s \n Razão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
             "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
-            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  doc1: %s \n doc2: %s \n\n Atribuídos a %d usuário(s)",
+            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  Ata de criação: %s \n Estatuto social: %s \n\n Atribuídos a %d usuário(s)",
             ongSelecionada.getObjectId("_id").toString(),
             ongSelecionada.getString("situacaoCadastral"),
             ongSelecionada.getString("razaoSocial"),
@@ -415,9 +415,8 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
             enderecoDisplay,
             redesDisplay,
             ongSelecionada.getString("descricao"),
-            
-            doc1,
-            doc2,
+            ataDeCriacao,
+            estatutoSocial,
             totalAtribuidos
         );
         
@@ -567,12 +566,12 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                 .addContainerGap()
                 .addGroup(ContasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(ContasLayout.createSequentialGroup()
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 334, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(JTFCampoPesquisaContas, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnPesquisarContas)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 284, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 195, Short.MAX_VALUE)
                         .addComponent(cbxNovoPerfil, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnSalvarPerfil))
@@ -689,12 +688,12 @@ private void exibirDetalhesOng(javax.swing.event.ListSelectionEvent e) {
                 .addContainerGap()
                 .addGroup(OngsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(OngsLayout.createSequentialGroup()
-                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 326, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(JTFCampoPesquisaOngs, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(JTFCampoPesquisaOngs)
+                        .addGap(33, 33, 33)
                         .addComponent(btnPesquisarOngs)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(56, 56, 56)
                         .addComponent(btnGerarRelatorio))
                     .addGroup(OngsLayout.createSequentialGroup()
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 557, Short.MAX_VALUE)

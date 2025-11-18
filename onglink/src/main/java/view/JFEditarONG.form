@@ -137,23 +137,24 @@
                   <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
+                          <Group type="102" attributes="0">
                               <Component id="jLabel16" min="-2" pref="101" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="brnClose" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Component id="jLabel9" min="-2" pref="100" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="cbxSituacaoCadastral" min="-2" pref="150" max="-2" attributes="0"/>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Component id="jLabel13" min="-2" pref="100" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="btnSalvarEdicao" min="-2" max="-2" attributes="0"/>
+                          <Group type="102" attributes="0">
+                              <Group type="103" groupAlignment="1" max="-2" attributes="0">
+                                  <Component id="jLabel13" max="32767" attributes="0"/>
+                                  <Component id="jLabel9" pref="127" max="32767" attributes="0"/>
+                              </Group>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="btnSalvarEdicao" min="-2" max="-2" attributes="0"/>
+                                  <Component id="cbxSituacaoCadastral" min="-2" pref="150" max="-2" attributes="0"/>
+                              </Group>
                           </Group>
                       </Group>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace pref="138" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -238,7 +239,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jLabel17" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="cbxOngs" pref="313" max="32767" attributes="0"/>
+                      <Component id="cbxOngs" pref="340" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>

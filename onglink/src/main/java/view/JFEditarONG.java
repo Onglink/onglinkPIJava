@@ -128,14 +128,14 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
   
         List<String> documentosDisplay = ongDoc.getList("arquivosLegais", String.class);
 
-        String doc1 = "Nenhum link de documento encontrado";
-        String doc2 = "Nenhum link de documento encontrado"; 
+        String ataDeCriacao = "Nenhum link de documento encontrado";
+        String estatutoSocial = "Nenhum link de documento encontrado"; 
 
         // 2. Verifica se a lista não está vazia
         if (documentosDisplay != null && !documentosDisplay.isEmpty()) {
             // 3. Extrai o primeiro link do array (índice 0)
-            doc1 = documentosDisplay.get(0);
-            doc2 = documentosDisplay.get(1);
+            ataDeCriacao = documentosDisplay.get(0);
+            estatutoSocial = documentosDisplay.get(1);
             
             
         }
@@ -192,7 +192,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             "--- INFORMAÇÕES DE REGISTRO ---\n" +
             "ID da ONG: %s\n Situação Cadastral: %s \n Razão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
             "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
-            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  doc1: %s \n doc2: %s \n\n Atribuídos a %d usuário(s)",
+            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  Ata de criação: %s \n Estatuto social: %s \n\n Atribuídos a %d usuário(s)",
             ongDoc.getObjectId("_id").toString(),
             ongDoc.getString("situacaoCadastral"),
             ongDoc.getString("razaoSocial"),
@@ -206,8 +206,8 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             enderecoDisplay,
             redesDisplay,
             ongDoc.getString("descricao"),
-            doc1,
-            doc2,
+            ataDeCriacao,
+            estatutoSocial,
             totalAtribuidos
         );
         
@@ -255,7 +255,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         jLabel17 = new javax.swing.JLabel();
         cbxOngs = new javax.swing.JComboBox<>();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
@@ -316,14 +316,14 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(brnClose))
                     .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cbxSituacaoCadastral, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnSalvarEdicao)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jLabel13, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, 127, Short.MAX_VALUE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(btnSalvarEdicao)
+                            .addComponent(cbxSituacaoCadastral, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(138, Short.MAX_VALUE))
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -355,7 +355,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
                 .addContainerGap()
                 .addComponent(jLabel17)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cbxOngs, 0, 313, Short.MAX_VALUE)
+                .addComponent(cbxOngs, 0, 340, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel7Layout.setVerticalGroup(
@@ -507,43 +507,19 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextArea TADescricao;
-    private javax.swing.JTextArea TADescricao1;
     private javax.swing.JTextArea TADetalhesOng;
-    private javax.swing.JTextField TFCausaSocial;
-    private javax.swing.JTextField TFCausaSocial1;
-    private javax.swing.JTextField TFNomeFantasia;
-    private javax.swing.JTextField TFNomeFantasia1;
-    private javax.swing.JTextField TFTelefone;
-    private javax.swing.JTextField TFTelefone1;
     private javax.swing.JButton brnClose;
     private javax.swing.JButton btnSalvarEdicao;
     private javax.swing.JComboBox<String> cbxOngs;
     private javax.swing.JComboBox<String> cbxSituacaoCadastral;
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
-    private javax.swing.JPanel jPanel;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel7;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane7;
     // End of variables declaration//GEN-END:variables
