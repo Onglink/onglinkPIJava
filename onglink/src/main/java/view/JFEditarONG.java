@@ -346,6 +346,11 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
         jLabel17.setText("Pesquisar ONG:");
 
         cbxOngs.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbxOngs.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbxOngsActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
@@ -480,6 +485,10 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             JOptionPane.showMessageDialog(this, "Falha ao salvar as edições da ONG.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnSalvarEdicaoActionPerformed
+
+    private void cbxOngsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxOngsActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cbxOngsActionPerformed
 
     /**
      * @param args the command line arguments
