@@ -3,6 +3,7 @@ package controller;
 import model.AuthModel;
 
 public class AuthController {
+
     private final AuthModel model;
 
     public AuthController() {
@@ -19,7 +20,7 @@ public class AuthController {
     public boolean isAdmin(String email) {
         return model.isAdmin(email);
     }
-    
+
     /**
      * Retorna o status do usuário (ADMIN, USER, ONG).
      */

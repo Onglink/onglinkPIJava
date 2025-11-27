@@ -20,42 +20,34 @@ import org.bson.types.ObjectId;
  */
 public class JFEditarONG extends javax.swing.JInternalFrame {
 
-private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName());
+    private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName());
     private final AdminController controller = new AdminController();
-    
+
     // --- VARIÁVEIS DE ESTADO E MAPEAMENTO ---
     private Map<String, Document> ongMap = new HashMap<>(); // Mapeia Nome Fantasia para Documento
     private Document ongSelecionada; // ONG selecionada para edição
     private String ongIdSelecionada;
-    
-
 
     // Construtor
     public JFEditarONG() {
         initComponents();
         carregarOngsNoComboBox(); // 🚨 Carrega as opções no ComboBox na inicialização
-        
+
         setTitle("Edição de Status Cadastral de ONGs");
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        
-        
-        
-    }
-    
 
-     
-    
+    }
+
     // --- LÓGICA DE CARREGAMENTO E MUDANÇA DE ESTADO ---
-    
     /**
      * Carrega todas as ONGs registradas no ComboBox, mostrando o Nome Fantasia.
      */
     private void carregarOngsNoComboBox() {
-        List<Document> todasOngs = controller.getOngs(); 
+        List<Document> todasOngs = controller.getOngs();
         DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-        
+
         model.addElement("--- Selecione para Editar ---");
-        
+
         for (Document ong : todasOngs) {
             String nomeFantasia = ong.getString("nomeFantasia");
             if (nomeFantasia != null) {
@@ -63,7 +55,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
                 ongMap.put(nomeFantasia, ong); // Mapeia para o Documento completo
             }
         }
-        
+
         if (cbxOngs != null) {
             cbxOngs.setModel(model);
             cbxOngs.addActionListener(this::cbxOngsSelectionChanged);
@@ -75,29 +67,31 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
      */
     private void cbxOngsSelectionChanged(ActionEvent evt) {
         String nomeFantasiaSelecionado = (String) cbxOngs.getSelectedItem();
-        
+
         if (nomeFantasiaSelecionado == null || nomeFantasiaSelecionado.startsWith("---")) {
-           
+
             return;
         }
-        
+
         Document ongDoc = ongMap.get(nomeFantasiaSelecionado);
-        
+
         if (ongDoc != null) {
-            ongSelecionada = ongDoc; 
+            ongSelecionada = ongDoc;
             ongIdSelecionada = ongDoc.getObjectId("_id").toString();
             preencherFormulario(ongDoc);
-             
-        }  
+
+        }
     }
 
     /**
-     * Insere os dados da ONG selecionada nos campos de texto para edição/visualização.
+     * Insere os dados da ONG selecionada nos campos de texto para
+     * edição/visualização.
      */
     private void preencherFormulario(Document ongDoc) {
-        if (ongDoc == null) return;
-        
-        
+        if (ongDoc == null) {
+            return;
+        }
+
         String enderecoDisplay = "N/A";
         Document endereco = ongDoc.get("endereco", Document.class);
         if (endereco != null) {
@@ -107,62 +101,55 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             String bairro = endereco.getString("bairro") != null ? endereco.getString("bairro") : "";
             String cep = endereco.getString("cep") != null ? endereco.getString("cep") : "";
             String cidade = endereco.getString("cidade") != null ? endereco.getString("cidade") : "";
-            String estado = endereco.getString("estado") != null ? endereco.getString("estado") : ""; // Atenção: deve ser ongSelecionada.getString("estado") se for um campo simples
-            
+            String estado = endereco.getString("estado") != null ? endereco.getString("estado") : "";
+
             enderecoDisplay = String.format("Logradouro: %s \n Numero: %s \n Complemento: %s \n Bairro: %s \n CEP: %s \n Cidade: %s \n Estado: %s \n", rua, numeroEnd, complemento, bairro, cep, cidade, estado).trim();
         }
-        
+
         // Redes Sociais
         String redesDisplay = "Nenhuma";
         Document redeSocial = ongDoc.get("redeSocial", Document.class);
-        if (redeSocial != null) { 
+        if (redeSocial != null) {
             String instagram = redeSocial.getString("instagram") != null ? redeSocial.getString("instagram") : "";
             String facebook = redeSocial.getString("facebook") != null ? redeSocial.getString("facebook") : "";
             String linkedin = redeSocial.getString("linkedin") != null ? redeSocial.getString("linkedin") : "";
             String site = redeSocial.getString("site") != null ? redeSocial.getString("site") : "";
-            
-            redesDisplay = String.format("Instagram: %s \n Facebook: %s \n Linkedin: %s \n Site: %s \n", instagram, facebook, linkedin, site );
-        }
-        
 
-  
+            redesDisplay = String.format("Instagram: %s \n Facebook: %s \n Linkedin: %s \n Site: %s \n", instagram, facebook, linkedin, site);
+        }
+
         List<String> documentosDisplay = ongDoc.getList("arquivosLegais", String.class);
 
         String ataDeCriacao = "Nenhum link de documento encontrado";
-        String estatutoSocial = "Nenhum link de documento encontrado"; 
+        String estatutoSocial = "Nenhum link de documento encontrado";
 
         // 2. Verifica se a lista não está vazia
         if (documentosDisplay != null && !documentosDisplay.isEmpty()) {
             // 3. Extrai o primeiro link do array (índice 0)
             ataDeCriacao = documentosDisplay.get(0);
             estatutoSocial = documentosDisplay.get(1);
-            
-            
+
         }
 
-        
         // ========================================================
         // NOVO: Lógica de Carregamento e Seleção do Status
         // ========================================================
-        
-        // 1. Define as opções disponíveis no ComboBox (você deve ter feito isso no Design, mas
-        // garantimos a lista aqui para fins de demonstração):
+        // 1. Define as opções disponíveis no ComboBox:
         String[] opcoesStatus = {"EM ANALISE", "APROVADO", "REPROVADO", "SUSPENSO", "INATIVO"};
         cbxSituacaoCadastral.setModel(new DefaultComboBoxModel<>(opcoesStatus));
-        
+
         // 2. Lê o status atual do MongoDB (assumindo campo 'situacaoCadastral')
         String statusAtual = ongDoc.getString("situacaoCadastral");
-        
+
         if (cbxSituacaoCadastral != null && statusAtual != null) {
             // 3. Pré-seleciona o valor correspondente no ComboBox (case-insensitive)
             // Isso garante que o valor do banco esteja visível
             cbxSituacaoCadastral.setSelectedItem(statusAtual.toUpperCase());
         }
-        
+
         List<?> assignedToList = ongDoc.get("assignedTo", List.class);
         int totalAtribuidos = (assignedToList != null) ? assignedToList.size() : 0;
 
-        
         List<Document> assignedUsers = controller.getAssignedUsersDetails(ongDoc);
         StringBuilder assignedUsersDisplay = new StringBuilder();
         assignedUsersDisplay.append("\n--------------------------------------------\n");
@@ -184,52 +171,51 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
                 assignedUsersDisplay.append("--- \n");
             }
         }
-        
-        
-        
 
         String detalhesComplementares = String.format(
-            "--- INFORMAÇÕES DE REGISTRO ---\n" +
-            "ID da ONG: %s\n Situação Cadastral: %s \n Razão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n" +
-            "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n" +
-            "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  Ata de criação: %s \n Estatuto social: %s \n\n Atribuídos a %d usuário(s)",
-            ongDoc.getObjectId("_id").toString(),
-            ongDoc.getString("situacaoCadastral"),
-            ongDoc.getString("razaoSocial"),
-            ongDoc.getString("nomeFantasia"),
-            ongDoc.getString("cnpj"),
-            ongDoc.getString("cpf"),
-            ongDoc.getString("repLegal"),
-            ongDoc.getString("causaSocial"),
-            ongDoc.getString("telefone"),
-            ongDoc.getString("email"),
-            enderecoDisplay,
-            redesDisplay,
-            ongDoc.getString("descricao"),
-            ataDeCriacao,
-            estatutoSocial,
-            totalAtribuidos
+                "--- INFORMAÇÕES DE REGISTRO ---\n"
+                + "ID da ONG: %s\n Situação Cadastral: %s \n Razão Social: %s\nNome Fantasia: %s\nCNPJ: %s (CPF: %s)\n"
+                + "Rep. Legal: %s\nCausa Social: %s\nTelefone: %s\nEmail: %s\n\n"
+                + "Endereço: \n %s \n\nRedes:\n %s\nDescrição: \n %s \n  \n Documentos: \n  Ata de criação: %s \n Estatuto social: %s \n\n Atribuídos a %d usuário(s)",
+                ongDoc.getObjectId("_id").toString(),
+                ongDoc.getString("situacaoCadastral"),
+                ongDoc.getString("razaoSocial"),
+                ongDoc.getString("nomeFantasia"),
+                ongDoc.getString("cnpj"),
+                ongDoc.getString("cpf"),
+                ongDoc.getString("repLegal"),
+                ongDoc.getString("causaSocial"),
+                ongDoc.getString("telefone"),
+                ongDoc.getString("email"),
+                enderecoDisplay,
+                redesDisplay,
+                ongDoc.getString("descricao"),
+                ataDeCriacao,
+                estatutoSocial,
+                totalAtribuidos
         );
-        
+
         String textoFinal = detalhesComplementares + assignedUsersDisplay.toString();
-        
+
         if (TADetalhesOng != null) {
             // Limpa e anexa os detalhes completos no JTextArea principal
             TADetalhesOng.setText("");
             TADetalhesOng.append(textoFinal);
-            TADetalhesOng.setCaretPosition(0); 
+            TADetalhesOng.setCaretPosition(0);
         }
-        
-        
-        
 
-    }    
+    }
 
-         private void vincularAcoes() {
-                if (btnSalvarEdicao != null) btnSalvarEdicao.addActionListener(this::btnSalvarEdicaoActionPerformed);
-                // Não vinculamos Aprovar/Reprovar para desativar a função
-                if (brnClose != null) brnClose.addActionListener(evt -> this.dispose());
+    private void vincularAcoes() {
+        if (btnSalvarEdicao != null) {
+            btnSalvarEdicao.addActionListener(this::btnSalvarEdicaoActionPerformed);
         }
+        // Não vinculamos Aprovar/Reprovar para desativar a função
+        if (brnClose != null) {
+            brnClose.addActionListener(evt -> this.dispose());
+        }
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -439,9 +425,9 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             return;
         }
 
-        // 3. Monta o Documento de Update (APENAS COM O CAMPO DE STATUS)
+        // 3. Monta o Documento de Update (APENAS COM O CAMPO DE SITUAÇÃO CADASTRAL)
         Document updates = new Document();
-        updates.append("situacaoCadastral", novoStatusCadastral); 
+        updates.append("situacaoCadastral", novoStatusCadastral);
 
         // Variável para armazenar o ID do usuário atribuído (o responsável)
         ObjectId userIdParaPromover = null;
@@ -461,7 +447,7 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
             if ("APROVADO".equalsIgnoreCase(novoStatusCadastral)) {
 
                 if (userIdParaPromover != null) {
-                    String userIdStr = userIdParaPromover.toString(); 
+                    String userIdStr = userIdParaPromover.toString();
 
                     // Reutiliza o método setStatus existente para mudar o perfil para "ONG"
                     if (controller.setStatus(userIdStr, "ong")) {
@@ -470,16 +456,16 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
                         JOptionPane.showMessageDialog(this, "Alerta: ONG salva, mas FALHA ao promover status do usuário.", "Erro", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                     JOptionPane.showMessageDialog(this, "Alerta: ONG salva, mas ID de usuário em 'assignedTo' é inválido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Alerta: ONG salva, mas ID de usuário em 'assignedTo' é inválido.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 }
             }
 
             // 6. Feedback final e sincronização
             JOptionPane.showMessageDialog(this, "Status da ONG salvo com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
-            carregarOngsNoComboBox(); // Re-carrega o ComboBox principal
-             // Limpa o estado da tela
-            ongSelecionada = null; 
+            carregarOngsNoComboBox(); // Recarrega o ComboBox principal
+            // Limpa o estado da tela
+            ongSelecionada = null;
 
         } else {
             JOptionPane.showMessageDialog(this, "Falha ao salvar as edições da ONG.", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -532,6 +518,5 @@ private static final Logger logger = Logger.getLogger(JFEditarONG.class.getName(
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane7;
     // End of variables declaration//GEN-END:variables
-
 
 }

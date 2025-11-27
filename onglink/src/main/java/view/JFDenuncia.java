@@ -13,28 +13,27 @@ import java.util.HashMap;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.Component;
+
 /**
  *
  * @author Felipe
  */
 public class JFDenuncia extends javax.swing.JInternalFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JFDenuncia.class.getName());
-    
+
     private final AdminController controller = new AdminController();
     private DefaultListModel<String> listModel; // Usaremos String para a lista
-    private Map<String, Document> mapSolicitacoes; 
+    private Map<String, Document> mapSolicitacoes;
     private Document denunciaSelecionada;
-    
- 
-    
+
     public JFDenuncia() {
         initComponents();
-        
+
         // Inicializa o Map e carrega a lista
-        mapSolicitacoes = new HashMap<>(); 
+        mapSolicitacoes = new HashMap<>();
         carregarLista(controller.getDenuncias());
-        
+
         // Configurações do InternalFrame
         setClosable(true);
         setMaximizable(true);
@@ -42,53 +41,54 @@ public class JFDenuncia extends javax.swing.JInternalFrame {
         setTitle("Gerenciar Denúncias");
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
     }
-    
-    // --- MÉTODOS DE DADOS E AUXILIARES (Adaptados para String/Map) ---
 
+    // --- MÉTODOS DE DADOS E AUXILIARES (Adaptados para String/Map) ---
     private void carregarLista(List<Document> lista) {
-        listModel = new DefaultListModel<>();  
+        listModel = new DefaultListModel<>();
         mapSolicitacoes.clear();
-        
+
         for (Document d : lista) {
             String id = d.getString("_id");
             String razaoSocial = d.getString("razaoSocial");
             String status = d.containsKey("status") ? " (" + d.getString("status") + ")" : "";
-            
+
             String chaveExibicao = id + " | " + razaoSocial + status;
-            
+
             listModel.addElement(chaveExibicao);
             mapSolicitacoes.put(chaveExibicao, d);
         }
-        
+
         jListDenuncias.setModel(listModel);
     }
 
     private void exibirDetalhes(ListSelectionEvent e) {
         if (!e.getValueIsAdjusting()) {
-            
+
             String chaveSelecionada = jListDenuncias.getSelectedValue();
-            
+
             if (chaveSelecionada == null || mapSolicitacoes.isEmpty()) {
                 TADetalhesArea.setText("Selecione uma denúncia.");
                 denunciaSelecionada = null;
                 return;
             }
-            
+
             // BUSCA O DOCUMENTO COMPLETO NO MAP
             denunciaSelecionada = mapSolicitacoes.get(chaveSelecionada);
-            
-            if (denunciaSelecionada == null) return;
+
+            if (denunciaSelecionada == null) {
+                return;
+            }
 
             // Montagem do Texto
             String detalhes = String.format(
-                "ID: %s\nRazão Social: %s\nCNPJ: %s\nEndereço: %s\nData Denúncia: %s\nLink Publicação: %s\nEmail: %s",
-                denunciaSelecionada.getString("_id"), 
-                denunciaSelecionada.getString("razaoSocial"),
-                denunciaSelecionada.getString("cnpj"),
-                denunciaSelecionada.getString("endereco"),
-                denunciaSelecionada.getString("dataDenuncia"),
-                denunciaSelecionada.getString("linkPublicacao"),
-                denunciaSelecionada.getString("email")
+                    "ID: %s\nRazão Social: %s\nCNPJ: %s\nEndereço: %s\nData Denúncia: %s\nLink Publicação: %s\nEmail: %s",
+                    denunciaSelecionada.getString("_id"),
+                    denunciaSelecionada.getString("razaoSocial"),
+                    denunciaSelecionada.getString("cnpj"),
+                    denunciaSelecionada.getString("endereco"),
+                    denunciaSelecionada.getString("dataDenuncia"),
+                    denunciaSelecionada.getString("linkPublicacao"),
+                    denunciaSelecionada.getString("email")
             );
             TADetalhesArea.setText(detalhes);
         }
@@ -190,7 +190,7 @@ public class JFDenuncia extends javax.swing.JInternalFrame {
 
     private void JTFCampoPesquisaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JTFCampoPesquisaActionPerformed
         // TODO add your handling code here:
-        final String termo = JTFCampoPesquisa.getText(); 
+        final String termo = JTFCampoPesquisa.getText();
         carregarLista(controller.filtrarDenuncias(termo));
     }//GEN-LAST:event_JTFCampoPesquisaActionPerformed
 
@@ -200,19 +200,19 @@ public class JFDenuncia extends javax.swing.JInternalFrame {
             JOptionPane.showMessageDialog(this, "Selecione um registro.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         final String idDenuncia = denunciaSelecionada.getString("_id");
         final String emailDestino = denunciaSelecionada.getString("email");
 
-        String motivo = JOptionPane.showInputDialog(this, 
-            "Informe o motivo da REMOÇÃO da publicação para o e-mail " + emailDestino + ":");
-        
+        String motivo = JOptionPane.showInputDialog(this,
+                "Informe o motivo da REMOÇÃO da publicação para o e-mail " + emailDestino + ":");
+
         if (motivo != null && !motivo.trim().isEmpty()) {
             if (controller.removerPublicacao(idDenuncia)) {
-                JOptionPane.showMessageDialog(this, 
-                    "Publicação removida e motivo enviado para " + emailDestino + 
-                    ". Status atualizado.", 
-                    "Denúncia Aprovada", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        "Publicação removida e motivo enviado para " + emailDestino
+                        + ". Status atualizado.",
+                        "Denúncia Aprovada", JOptionPane.INFORMATION_MESSAGE);
                 carregarLista(controller.getDenuncias()); // Recarrega
             } else {
                 JOptionPane.showMessageDialog(this, "Erro ao tentar remover publicação.", "Erro", JOptionPane.ERROR_MESSAGE);

@@ -13,77 +13,72 @@ import java.util.Map;
 import java.util.HashMap;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+
 /**
  *
  * @author Felipe
  */
 public class JFAprovacao extends javax.swing.JInternalFrame {
-private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JFAprovacao.class.getName());
+
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JFAprovacao.class.getName());
     private final AdminController controller = new AdminController();
-    private DefaultListModel<String> listModel; // O MODELO AGORA É STRING!
-    
+    private DefaultListModel<String> listModel; 
+
     // NOVO: Map para armazenar o objeto Document completo, usando a String de exibição como chave.
-    private Map<String, Document> mapSolicitacoes; 
+    private Map<String, Document> mapSolicitacoes;
     private Document solicitacaoSelecionada;
 
-
-    
     // --- CONSTRUTOR ---
     public JFAprovacao() {
-        initComponents(); 
-        
-         
+        initComponents();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        
+
         // Garante que a tela pode ser fechada, redimensionada e movida
         setClosable(true);
         setMaximizable(true);
         setResizable(true);
-        setTitle("Gerenciar Aprovações");  
-        
+        setTitle("Gerenciar Aprovações");
+
         // Inicializa o Map e carrega a lista
-        mapSolicitacoes = new HashMap<>(); 
+        mapSolicitacoes = new HashMap<>();
         carregarLista(controller.getAprovacoes());
-        
+
         // Configurações do Frame
         setTitle("Gerenciar Aprovações");
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        
         // Oculta o botão de documentos inicialmente
-        btnDocumentos.setVisible(false); 
-        
+        btnDocumentos.setVisible(false);
+
         this.setVisible(true);
     }
-    
+
     // --- MÉTODOS DE DADOS E LAYOUT (CORRIGIDOS) ---
-    
-     
     private void carregarLista(List<Document> lista) {
-        listModel = new DefaultListModel<>();  
+        listModel = new DefaultListModel<>();
         mapSolicitacoes.clear(); // Limpa o mapa a cada recarregamento
-        
+
         for (Document d : lista) {
             String id = d.getString("_id");
             String razaoSocial = d.getString("razaoSocial");
             String nomeFantasia = d.getString("nomeFantasia");
             String status = d.containsKey("dataAprovacao") ? " (APROVADO)" : "";
-            
-             
+
             String chaveExibicao = id + " | " + razaoSocial + nomeFantasia + status;
-            
+
             listModel.addElement(chaveExibicao);
             mapSolicitacoes.put(chaveExibicao, d); // Mapeia a string para o Document
         }
-        
-        jListAprovacoes.setModel(listModel); 
+
+        jListAprovacoes.setModel(listModel);
     }
 
     private void exibirDetalhes(ListSelectionEvent e) {
         if (!e.getValueIsAdjusting()) {
-            
+
             String chaveSelecionada = jListAprovacoes.getSelectedValue();
-            
+
             // 1. Limpeza e Verificação Inicial
             if (chaveSelecionada == null || mapSolicitacoes.isEmpty()) {
                 TADetalhesArea.setText("Selecione uma solicitação.");
@@ -91,36 +86,39 @@ private static final java.util.logging.Logger logger = java.util.logging.Logger.
                 solicitacaoSelecionada = null;
                 return;
             }
-            
+
             // 2. BUSCA O DOCUMENTO COMPLETO NO MAP USANDO A CHAVE SELECIONADA
             solicitacaoSelecionada = mapSolicitacoes.get(chaveSelecionada);
-            
+
             // Garante que o documento foi encontrado
-            if (solicitacaoSelecionada == null) return;
+            if (solicitacaoSelecionada == null) {
+                return;
+            }
 
             // Obtém o status dos documentos
             boolean temDocumentos = solicitacaoSelecionada.getBoolean("documentosEnviados", false);
             String documentosStatus = temDocumentos ? "SIM" : "NÃO";
-            
+
             // 3. Montagem do Texto (CORRIGIDO O FORMATO DA STRING)
-        String detalhes = String.format(
-            "ID: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s\nRepresentante Legal: %s\nCausa Social: %s\nDescrição: %s\nEndereço: %s\nEmail: %s\n\nSTATUS DOCUMENTOS: %s",
-            solicitacaoSelecionada.getString("_id"), 
-            solicitacaoSelecionada.getString("razaoSocial"),
-            solicitacaoSelecionada.getString("nomeFantasia"),
-            solicitacaoSelecionada.getString("cnpj"),
-            solicitacaoSelecionada.getString("repLegal"),
-            solicitacaoSelecionada.getString("causaSocial"),
-            solicitacaoSelecionada.getString("descricao"),
-            solicitacaoSelecionada.getString("endereco"),
-            solicitacaoSelecionada.getString("email"),
-            documentosStatus
-        );
-        TADetalhesArea.setText(detalhes);
+            String detalhes = String.format(
+                    "ID: %s\nRazão Social: %s\nNome Fantasia: %s\nCNPJ: %s\nRepresentante Legal: %s\nCausa Social: %s\nDescrição: %s\nEndereço: %s\nEmail: %s\n\nSTATUS DOCUMENTOS: %s",
+                    solicitacaoSelecionada.getString("_id"),
+                    solicitacaoSelecionada.getString("razaoSocial"),
+                    solicitacaoSelecionada.getString("nomeFantasia"),
+                    solicitacaoSelecionada.getString("cnpj"),
+                    solicitacaoSelecionada.getString("repLegal"),
+                    solicitacaoSelecionada.getString("causaSocial"),
+                    solicitacaoSelecionada.getString("descricao"),
+                    solicitacaoSelecionada.getString("endereco"),
+                    solicitacaoSelecionada.getString("email"),
+                    documentosStatus
+            );
+            TADetalhesArea.setText(detalhes);
             // 4. CONTROLE DA VISIBILIDADE DO BOTÃO
-            btnDocumentos.setVisible(temDocumentos); 
+            btnDocumentos.setVisible(temDocumentos);
         }
     }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -142,7 +140,7 @@ private static final java.util.logging.Logger logger = java.util.logging.Logger.
         btnReprovar = new javax.swing.JButton();
         btnDocumentos = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jLabel1.setText("Pesquisar:");
 
@@ -182,6 +180,7 @@ private static final java.util.logging.Logger logger = java.util.logging.Logger.
             public int getSize() { return strings.length; }
             public String getElementAt(int i) { return strings[i]; }
         });
+        jListAprovacoes.setFocusable(false);
         jListAprovacoes.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
             public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
                 jListAprovacoesValueChanged(evt);
@@ -266,56 +265,56 @@ private static final java.util.logging.Logger logger = java.util.logging.Logger.
             JOptionPane.showMessageDialog(this, "Selecione um registro para aprovar.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         final String idSolicitacao = solicitacaoSelecionada.getString("_id");
 
         if (controller.aprovar(idSolicitacao)) {
-             JOptionPane.showMessageDialog(this, 
-                "Solicitação de ID " + idSolicitacao + " APROVADA.", 
-                "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-             
-             // Limpa e recarrega a lista para refletir o status atualizado
-             carregarLista(controller.getAprovacoes());
+            JOptionPane.showMessageDialog(this,
+                    "Solicitação de ID " + idSolicitacao + " APROVADA.",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            // Limpa e recarrega a lista para refletir o status atualizado
+            carregarLista(controller.getAprovacoes());
         } else {
-             JOptionPane.showMessageDialog(this, "Erro ao tentar aprovar no MongoDB.", "Erro", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Erro ao tentar aprovar no MongoDB.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnAprovarActionPerformed
 
     private void btnPesquisarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarActionPerformed
-final String termo = jTFPesquisa.getText(); 
+        final String termo = jTFPesquisa.getText();
         carregarLista(controller.filtrarAprovacoes(termo));
     }//GEN-LAST:event_btnPesquisarActionPerformed
 
     private void btnReprovarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReprovarActionPerformed
-    if (solicitacaoSelecionada == null) {
-        JOptionPane.showMessageDialog(this, "Selecione um registro para aprovar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
- // Obtém o _id da solicitação
-    // ATENÇÃO: Se o _id na lista de aprovação for uma String, use getString("_id")
-    final String idSolicitacao = solicitacaoSelecionada.getObjectId("_id").toString(); 
-    
-    // Chamada ao método atualizado do Controller
-    if (controller.aprovarONG(idSolicitacao)) {
-         JOptionPane.showMessageDialog(this, 
-            "Solicitação APROVADA! Registro da ONG criado e perfil do usuário atualizado.", 
-            "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-         
-         // Recarrega a lista
-         carregarLista(controller.getAprovacoes());
-         // Limpa a área de detalhes
-         TADetalhesArea.setText(""); 
-    } else {
-         JOptionPane.showMessageDialog(this, "Erro FATAL ao aprovar/inserir a ONG.", "Erro", JOptionPane.ERROR_MESSAGE);
-    }
+        if (solicitacaoSelecionada == null) {
+            JOptionPane.showMessageDialog(this, "Selecione um registro para aprovar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Obtém o _id da solicitação
+        
+        final String idSolicitacao = solicitacaoSelecionada.getObjectId("_id").toString();
+
+        // Chamada ao método atualizado do Controller
+        if (controller.aprovarONG(idSolicitacao)) {
+            JOptionPane.showMessageDialog(this,
+                    "Solicitação APROVADA! Registro da ONG criado e perfil do usuário atualizado.",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            // Recarrega a lista
+            carregarLista(controller.getAprovacoes());
+            // Limpa a área de detalhes
+            TADetalhesArea.setText("");
+        } else {
+            JOptionPane.showMessageDialog(this, "Erro FATAL ao aprovar/inserir a ONG.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnReprovarActionPerformed
 
     private void btnDocumentosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDocumentosActionPerformed
         // TODO add your handling code here:
-      if (solicitacaoSelecionada != null) {
+        if (solicitacaoSelecionada != null) {
             final String razaoSocial = solicitacaoSelecionada.getString("razaoSocial");
-            
+
             // Chama a tela que simula a visualização dos PDFs
             new JFDocumentosFrame(razaoSocial).setVisible(true);
         }

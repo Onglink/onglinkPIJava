@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package view;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
@@ -12,32 +13,33 @@ import java.io.IOException;
  * @author Felipe
  */
 public class JFDocumentosFrame extends javax.swing.JFrame {
+
     public JFDocumentosFrame(String razaoSocial) {
         super("Documentos de " + razaoSocial);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); 
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(700, 500);
         setLayout(new BorderLayout());
 
         JLabel titulo = new JLabel("Visualização de Documentos (PDFs)", SwingConstants.CENTER);
         titulo.setFont(new Font("Arial", Font.BOLD, 16));
-        
+
         JTextArea areaVisualizacao = new JTextArea();
         areaVisualizacao.setEditable(false);
-        
-        String simulacao = "Carregando PDFs para: " + razaoSocial + "\n\n" +
-                           "---------------------------------------------------\n" +
-                           "SIMULAÇÃO DE ARQUIVOS ENCONTRADOS:\n" +
-                           "1. Contrato Social (Contrato_001.pdf)\n" +
-                           "2. Cópia do CNPJ (CNPJ_Alfa.pdf)\n" +
-                           "3. Última Alteração Contratual (Alteracao_15.pdf)\n\n" +
-                           " * Para visualização real, use bibliotecas como PDFBox.";
-        
+
+        String simulacao = "Carregando PDFs para: " + razaoSocial + "\n\n"
+                + "---------------------------------------------------\n"
+                + "SIMULAÇÃO DE ARQUIVOS ENCONTRADOS:\n"
+                + "1. Contrato Social (Contrato_001.pdf)\n"
+                + "2. Cópia do CNPJ (CNPJ_Alfa.pdf)\n"
+                + "3. Última Alteração Contratual (Alteracao_15.pdf)\n\n"
+                + " * Para visualização real, use bibliotecas como PDFBox.";
+
         areaVisualizacao.setText(simulacao);
-        
+
         add(titulo, BorderLayout.NORTH);
         add(new JScrollPane(areaVisualizacao), BorderLayout.CENTER);
-        
-        setLocationRelativeTo(null); 
+
+        setLocationRelativeTo(null);
     }
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JFDocumentosFrame.class.getName());
 

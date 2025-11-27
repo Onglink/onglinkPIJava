@@ -13,20 +13,18 @@ import javax.swing.JOptionPane;
 public class RelatorioOngs {
 
     public boolean gerar(List<Document> listaOngs, String filePath) {
-        
-        // 🚨 CORREÇÃO CRÍTICA: Declara a variável com o tipo COMPLETO do iText
+
         com.itextpdf.text.Document pdfDocument = new com.itextpdf.text.Document();
-        
+
         try {
             PdfWriter.getInstance(pdfDocument, new FileOutputStream(filePath));
-            pdfDocument.open(); // Agora o método open() é reconhecido
-            
-            // Título do Relatório (Métodos add() e close() agora funcionarão)
+            pdfDocument.open();
+
             pdfDocument.add(new Paragraph("Relatório de ONGs Cadastradas", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, Font.NORMAL, BaseColor.BLACK)));
             pdfDocument.add(Chunk.NEWLINE);
 
             // Criação da Tabela (4 Colunas)
-            PdfPTable table = new PdfPTable(4); 
+            PdfPTable table = new PdfPTable(4);
             table.setWidthPercentage(100);
             table.setSpacingBefore(10f);
 
@@ -38,7 +36,7 @@ public class RelatorioOngs {
 
             // Preenche os Dados
             for (Document ong : listaOngs) {
-                // Aqui usamos o org.bson.Document para acessar os dados
+
                 table.addCell(ong.getString("nomeFantasia"));
                 table.addCell(ong.getString("cnpj"));
                 table.addCell(ong.getString("causaSocial"));
@@ -46,7 +44,7 @@ public class RelatorioOngs {
             }
 
             pdfDocument.add(table);
-            pdfDocument.close(); // Agora o método close() é reconhecido
+            pdfDocument.close();
             return true;
         } catch (DocumentException | IOException e) {
             e.printStackTrace();
